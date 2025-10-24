@@ -268,22 +268,31 @@
     }
 
     // Map integration (uses Google Maps JS loaded with Places library)
- function initMap() {
-  const mapStatus = document.getElementById("mapStatus");
-  mapStatus.textContent = "Initializing map...";
+//  function initMap() {
+//   const mapStatus = document.getElementById("mapStatus");
+//   mapStatus.textContent = "Initializing map...";
 
-  // Default center (Catarman as fallback)
-  const center = { lat: 12.5029, lng: 124.6307 };
+//   // Default center (Catarman as fallback)
+//   const center = { lat: 12.5029, lng: 124.6307 };
 
-  // Create map
+//   // Create map
+//   const map = new google.maps.Map(document.getElementById("map"), {
+//     center,
+//     zoom: 14,
+//     styles: [ /* optional pastel map styles */ ],
+//   });
+
+//   window.map = map;
+//   mapStatus.textContent = "Map ready!";
+// }
+
+    function initMap() {
+  console.log("Map initialized");
   const map = new google.maps.Map(document.getElementById("map"), {
-    center,
-    zoom: 14,
-    styles: [ /* optional pastel map styles */ ],
+    center: { lat: 12.5029, lng: 124.6307 },
+    zoom: 13,
   });
-
-  window.map = map;
-  mapStatus.textContent = "Map ready!";
+  window.map = map; // make map global
 }
 
 
@@ -545,5 +554,6 @@
   </script>
 </body>
 </html>
+
 
 
