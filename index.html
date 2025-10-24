@@ -1,433 +1,433 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
-  <meta charset="UTF-8" />
-
-  <title>Cafe Curator</title>
-
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕️</text></svg>">
-
-  <link href="https://fonts.googleapis.com/css2?family=Savate:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
-
-  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
-
-  <link rel="stylesheet" href="style.css">
-
-</head>
-
-<body>
-
-  <h1>☕️ Cafe Curator 🍵</h1>
-
-  <p>Find and save the best cafes near you.</p>
-
-
-
-  <div>
-
-    <button onclick="getLocationCachedOrNew()">Find Cafes Near Me</button>
-
-    <button onclick="showSaved()">Show Saved Cafes</button>
-
-  </div>
-
-
-
-  <div class="cards"></div>
-
-
-
-  <script>
-
-    // IMPORTANT: Replace this with your actual, restricted API key.
-
-    const apiKey = "AIzaSyDk8cpELLpGngE-1uLEGSuG5VnUwTqPq3w"; // 🚨 CHECK GOOGLE CLOUD CONSOLE
-
-    // Removed the unreliable public proxy. Direct call requires correct API key restrictions.
-
-    
-
-    /**
-
-     * Retrieves location from cache or asks for a new one.
-
-     */
-
-    function getLocationCachedOrNew() {
-
-      const cache = JSON.parse(localStorage.getItem('cachedLocation') || '{}');
-
-      const now = Date.now();
-
-      // Cache is valid for 10 minutes
-
-      if (cache.timestamp && now - cache.timestamp < 10 * 60 * 1000) {
-
-        console.log("Using cached location.");
-
-        useLocation(cache.lat, cache.lng);
-
-      } else {
-
-        console.log("Getting new location...");
-
-        navigator.geolocation.getCurrentPosition(pos => {
-
-          const lat = pos.coords.latitude;
-
-          const lng = pos.coords.longitude;
-
-          localStorage.setItem('cachedLocation', JSON.stringify({ lat, lng, timestamp: now }));
-
-          useLocation(lat, lng);
-
-        }, (err) => {
-
-          console.error("Geolocation Error:", err);
-
-          alert("Location access denied or unavailable. Please enable location services.");
-
-        });
-
-      }
-
-    }
-
-
-
-    /**
-
-     * Fetches nearby cafes using the Google Places API.
-
-     */
-
-    async function useLocation(lat, lng) {
-
-      const endpoint = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=1500&type=cafe&key=${apiKey}`;
-
-      
-
-      try {
-
-        const response = await fetch(endpoint);
-
-
-
-        // 1. Check for network/HTTP errors (e.g., 403 Forbidden due to API key)
-
-        if (!response.ok) {
-
-          const errorText = await response.text();
-
-          console.error("HTTP Error:", response.status, response.statusText, errorText);
-
-          alert(`Request failed: HTTP Status ${response.status}. Check console for API key/restriction issues.`);
-
-          return;
-
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milktea Maven 🥤</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧋</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #A3C9A8; /* Soft Green */
+            --secondary-color: #E2F0D9; /* Light Cream */
+            --text-color: #333;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #709475;
+            margin-bottom: 8px;
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: 2px solid var(--primary-color);
+        }
+        .btn-primary:hover {
+            background-color: #8bb190;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        /* Card Styling for Swiping */
+        .cards-wrapper {
+            position: relative;
+            height: 400px; /* Fixed height for the stack */
+            width: 100%;
+            max-width: 350px;
+            margin-top: 30px;
+        }
+        .swipe-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            touch-action: none; /* Allows HammerJS to handle touch */
+            cursor: grab;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+        }
+        .location-card {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            transform-origin: center;
+            border: 1px solid #ddd;
+        }
+        .location-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 0.75rem;
+            margin-bottom: 12px;
+        }
+        .saved-list-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+        .saved-card {
+            display: flex;
+            align-items: center;
+            text-align: left;
+            padding: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .saved-card img {
+            width: 80px;
+            height: 80px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        .saved-card div {
+            flex-grow: 1;
+        }
+        .saved-card button {
+            background-color: #e57373;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            margin-left: 12px;
+        }
+        .saved-card button:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+    <script>
+        // --- Core Application Logic ---
+
+        // IMPORTANT: REPLACE THIS WITH YOUR ACTUAL, RESTRICTED GOOGLE PLACES API KEY
+        const apiKey = "AIzaSyDk8cpELLpGngE-1uLEGSuG5VnUwTqPq3w"; 
+        const API_ENDPOINT = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
+        const PHOTO_ENDPOINT = "https://maps.googleapis.com/maps/api/place/photo";
+
+        /**
+         * Converts coordinates to a location string for the API.
+         * @param {number} lat 
+         * @param {number} lng 
+         * @returns {string}
+         */
+        const getLocationString = (lat, lng) => `${lat},${lng}`;
+
+        /**
+         * Fetches location from cache or asks for a new one via browser geolocation.
+         */
+        function getLocationCachedOrNew() {
+            const container = document.querySelector('.cards-wrapper');
+            container.innerHTML = '<p class="text-center text-gray-500">Locating you...</p>';
+
+            const cache = JSON.parse(localStorage.getItem('cachedLocation') || '{}');
+            const now = Date.now();
+            const cacheDuration = 10 * 60 * 1000; // 10 minutes
+
+            if (cache.timestamp && now - cache.timestamp < cacheDuration) {
+                console.log("Using cached location.");
+                fetchMilkteaShops(cache.lat, cache.lng);
+            } else {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        localStorage.setItem('cachedLocation', JSON.stringify({ lat, lng, timestamp: now }));
+                        fetchMilkteaShops(lat, lng);
+                    }, (err) => {
+                        console.error("Geolocation Error:", err);
+                        container.innerHTML = '<p class="text-center text-red-500">Location access denied or unavailable. Please enable location services.</p>';
+                    });
+                } else {
+                    container.innerHTML = '<p class="text-center text-red-500">Geolocation is not supported by your browser.</p>';
+                }
+            }
+        }
+
+        /**
+         * Fetches nearby Milktea shops using the Google Places API.
+         */
+        async function fetchMilkteaShops(lat, lng) {
+            const container = document.querySelector('.cards-wrapper');
+            container.innerHTML = '<p class="text-center text-gray-500">Searching for Milktea...</p>';
+
+            // Use 'restaurant' type + 'milktea|boba|bubble tea' keyword for best results
+            const keyword = 'milktea|boba|bubble%20tea'; 
+            const endpoint = `${API_ENDPOINT}?location=${getLocationString(lat, lng)}&radius=3000&type=restaurant&keyword=${keyword}&key=${apiKey}`;
+
+            try {
+                const response = await fetch(endpoint);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("HTTP Error:", response.status, response.statusText, errorText);
+                    container.innerHTML = `<p class="text-center text-red-500">Request failed: HTTP Status ${response.status}. Check console for API key or restriction issues.</p>`;
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+                    console.error("Places API Status Error:", data.status, data.error_message || "");
+                    container.innerHTML = `<p class="text-center text-red-500">API Error: ${data.status}. Did you enable the Places API and use a valid key?</p>`;
+                    return;
+                }
+
+                if (data.results && data.results.length > 0) {
+                    displaySwipeCards(data.results);
+                } else {
+                    container.innerHTML = '<p class="text-center text-gray-500">No Milktea shops found near you 😢</p>';
+                }
+            } catch (e) {
+                console.error("Network or Parsing Error:", e);
+                container.innerHTML = '<p class="text-center text-red-500">A network error occurred. Check your internet connection.</p>';
+            }
+        }
+
+        /**
+         * Renders the swipeable cards.
+         */
+        function displaySwipeCards(shops) {
+            const container = document.querySelector('.cards-wrapper');
+            container.innerHTML = '';
+            
+            shops.forEach((shop, i) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'swipe-wrapper';
+                wrapper.style.zIndex = 200 - i; // Stack cards
+                wrapper.setAttribute('data-place-id', shop.place_id);
+
+                // Simple card depth scaling
+                const scale = 1 - (i * 0.05);
+                const translateY = 10 * i;
+                
+                const card = document.createElement('div');
+                card.className = 'location-card';
+                card.style.transform = `scale(${scale}) translateY(${translateY}px)`;
+                
+                // Get photo URL or use a placeholder
+                const photoRef = shop.photos?.[0]?.photo_reference;
+                const imgUrl = photoRef 
+                    ? `${PHOTO_ENDPOINT}?maxwidth=400&photoreference=${photoRef}&key=${apiKey}`
+                    : 'https://placehold.co/400x180/A3C9A8/ffffff?text=Milktea+Shop';
+                
+                const shopData = {
+                    name: shop.name,
+                    place_id: shop.place_id,
+                    photo: imgUrl,
+                    rating: shop.rating || 'N/A'
+                };
+
+                card.innerHTML = `
+                    <img src="${imgUrl}" onerror="this.onerror=null; this.src='https://placehold.co/400x180/A3C9A8/ffffff?text=Milktea+Shop';" alt="${shop.name}" class="shadow-md" />
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">${shop.name}</h3>
+                    <p class="text-lg text-yellow-600">⭐️ ${shop.rating || 'No Rating'}</p>
+                    <p class="text-sm text-gray-400 mt-2">Swipe right to save 💖</p>
+                `;
+
+                wrapper.appendChild(card);
+                container.appendChild(wrapper);
+
+                setupSwipeListeners(wrapper, shopData);
+            });
+        }
+
+        /**
+         * Initializes HammerJS for swiping on a card.
+         */
+        function setupSwipeListeners(wrapper, shopData) {
+            const hammertime = new Hammer(wrapper);
+            const card = wrapper.querySelector('.location-card');
+
+            // Pan/Drag listener for interactive movement
+            hammertime.on('pan move', (e) => {
+                if (e.deltaX !== 0) {
+                    const rotation = e.deltaX / 50; // Rotate based on drag
+                    card.style.transition = 'none';
+                    card.style.transform = `translate(${e.deltaX}px, 0px) rotate(${rotation}deg)`;
+                }
+            });
+
+            // Pan End listener to determine swipe direction or reset
+            hammertime.on('panend', (e) => {
+                card.style.transition = 'transform 0.3s ease';
+
+                if (e.deltaX > 100) { // Swipe Right (Save)
+                    saveAndDismiss(wrapper, shopData, 'right');
+                } else if (e.deltaX < -100) { // Swipe Left (Reject)
+                    dismissCard(wrapper, 'left');
+                } else { // Reset
+                    resetCard(wrapper);
+                }
+            });
+        }
+
+        /**
+         * Resets a card to its default position.
+         */
+        function resetCard(wrapper) {
+            const card = wrapper.querySelector('.location-card');
+            const index = Array.from(wrapper.parentNode.children).indexOf(wrapper);
+            const scale = 1 - (index * 0.05);
+            const translateY = 10 * index;
+            card.style.transform = `scale(${scale}) translateY(${translateY}px)`;
         }
 
 
-
-        const data = await response.json();
-
-
-
-        // 2. Check for Places API status errors (e.g., REQUEST_DENIED, ZERO_RESULTS)
-
-        if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-
-          console.error("Places API Status Error:", data.status, data.error_message || "");
-
-          alert(`Places API error: ${data.status}. This is often due to an invalid or improperly restricted API Key.`);
-
-          return;
-
+        /**
+         * Saves the shop and dismisses the card.
+         */
+        function saveAndDismiss(wrapper, shopData, direction) {
+            saveShop(shopData);
+            wrapper.style.transition = 'transform 0.3s, opacity 0.3s';
+            const offset = direction === 'right' ? '150%' : '-150%';
+            const rotation = direction === 'right' ? '15deg' : '-15deg';
+            wrapper.style.transform = `translateX(${offset}) rotate(${rotation})`;
+            wrapper.style.opacity = 0;
+            setTimeout(() => wrapper.remove(), 300);
+            updateCardStack();
         }
 
-
-
-        if (data.results && data.results.length > 0) {
-
-          displayCards(data.results);
-
-        } else {
-
-          document.querySelector('.cards').innerHTML = '<p>No cafes found in the area. Try again later.</p>';
-
+        /**
+         * Dismisses the card without saving.
+         */
+        function dismissCard(wrapper, direction) {
+            wrapper.style.transition = 'transform 0.3s, opacity 0.3s';
+            const offset = direction === 'right' ? '150%' : '-150%';
+            const rotation = direction === 'right' ? '15deg' : '-15deg';
+            wrapper.style.transform = `translateX(${offset}) rotate(${rotation})`;
+            wrapper.style.opacity = 0;
+            setTimeout(() => wrapper.remove(), 300);
+            updateCardStack();
         }
 
-      } catch (e) {
-
-        console.error("Network or Parsing Error:", e);
-
-        alert("A network or parsing error occurred. Check your internet connection.");
-
-      }
-
-    }
-
-
-
-    function displayCards(cafes) {
-
-      const container = document.querySelector('.cards');
-
-      container.innerHTML = '';
-
-      
-
-      // Simple card scaling logic (optional)
-
-      const cardDepth = (index) => {
-
-        const maxIndex = 3;
-
-        if (index >= maxIndex) return '';
-
-
-
-        const scale = 1 - (index / 25);
-
-        const translateY = 5 * index;
-
-        return `transform: scale(${scale}) translateY(${translateY}px);`;
-
-      }
-
-
-
-      cafes.forEach((cafe, i) => {
-
-        const wrapper = document.createElement('div');
-
-        wrapper.className = 'swipe-wrapper';
-
-        wrapper.style.zIndex = 200 - i;
-
-        wrapper.setAttribute('data-index', i); // for potential styling based on index
-
-
-
-        const card = document.createElement('div');
-
-        card.className = 'location-card';
-
-        card.style = cardDepth(i); // Apply simple depth styling
-
-
-
-        const imgUrl = cafe.photos?.[0]?.photo_reference
-
-          ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${cafe.photos[0].photo_reference}&key=${apiKey}`
-
-          : 'https://via.placeholder.com/250x150?text=No+Image';
-
-
-
-        const cafeData = {
-
-          name: cafe.name,
-
-          place_id: cafe.place_id,
-
-          photo: imgUrl,
-
-          rating: cafe.rating || 'N/A'
-
-        };
-
-
-
-        card.innerHTML = `
-
-          <img src="${imgUrl}" alt="${cafe.name}" />
-
-          <h3>${cafe.name}</h3>
-
-          <p>⭐️ Rating: ${cafe.rating || 'N/A'}</p>
-
-          <p><small>Swipe right to save 💖</small></p>
-
-        `;
-
-
-
-        wrapper.appendChild(card);
-
-        container.appendChild(wrapper);
-
-
-
-        const hammertime = new Hammer(wrapper);
-
-        // SWIPE LEFT (Reject)
-
-        hammertime.on('swipeleft', () => {
-
-          wrapper.style.transition = 'transform 0.3s, opacity 0.3s';
-
-          wrapper.style.transform = 'translateX(-150%) rotate(-15deg)';
-
-          wrapper.style.opacity = 0;
-
-          setTimeout(() => wrapper.remove(), 300);
-
-          updateCardStack();
-
-        });
-
+        /**
+         * Function to re-style remaining cards after a swipe.
+         */
+        function updateCardStack() {
+            // Apply slight delay to ensure element removal is processed
+            setTimeout(() => {
+                const remainingCards = document.querySelectorAll('.cards-wrapper .swipe-wrapper');
+                remainingCards.forEach((wrapper, index) => {
+                    const card = wrapper.querySelector('.location-card');
+                    const scale = 1 - (index * 0.05);
+                    const translateY = 10 * index;
+                    
+                    wrapper.style.zIndex = 200 - index;
+                    card.style.transition = 'transform 0.3s ease';
+                    card.style.transform = `scale(${scale}) translateY(${translateY}px)`;
+                });
+            }, 50);
+        }
+
+        /**
+         * Saves a shop to localStorage.
+         */
+        function saveShop(shop) {
+            let saved = JSON.parse(localStorage.getItem('savedMilktea') || '[]');
+            if (!saved.find(c => c.place_id === shop.place_id)) {
+                saved.push(shop);
+                localStorage.setItem('savedMilktea', JSON.stringify(saved));
+                console.log(`${shop.name} saved!`);
+            } else {
+                console.log(`${shop.name} is already saved.`);
+            }
+        }
+
+        /**
+         * Displays the list of saved shops.
+         */
+        function showSaved() {
+            const container = document.querySelector('.cards-wrapper');
+            container.innerHTML = ''; // Clear swipe stack
+            
+            const savedList = document.createElement('div');
+            savedList.className = 'saved-list-wrapper';
+
+            const saved = JSON.parse(localStorage.getItem('savedMilktea') || '[]');
+            
+            if (saved.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500">You haven\'t saved any Milktea shops yet! 😢</p>';
+                return;
+            }
+
+            saved.forEach(shop => {
+                const card = document.createElement('div');
+                card.className = 'location-card saved-card';
+                card.innerHTML = `
+                    <img src="${shop.photo}" onerror="this.onerror=null; this.src='https://placehold.co/80x80/A3C9A8/ffffff?text=Milktea';" alt="${shop.name}" class="shadow-sm" />
+                    <div>
+                        <h3 class="font-semibold">${shop.name}</h3>
+                        <p class="text-sm text-yellow-600">⭐️ ${shop.rating}</p>
+                    </div>
+                    <button class="remove-btn" onclick="removeSavedShop('${shop.place_id}')">Remove</button>
+                `;
+                savedList.appendChild(card);
+            });
+            container.appendChild(savedList);
+        }
         
-
-        // SWIPE RIGHT (Save)
-
-        hammertime.on('swiperight', () => {
-
-          saveCafe(JSON.stringify(cafeData));
-
-          wrapper.style.transition = 'transform 0.3s, opacity 0.3s';
-
-          wrapper.style.transform = 'translateX(150%) rotate(15deg)';
-
-          wrapper.style.opacity = 0;
-
-          setTimeout(() => wrapper.remove(), 300);
-
-          updateCardStack();
-
-        });
-
-      });
-
-    }
-
-
-
-    // Function to re-style remaining cards after a swipe
-
-    function updateCardStack() {
-
-      const remainingCards = document.querySelectorAll('.swipe-wrapper .location-card');
-
-      remainingCards.forEach((card, index) => {
-
-        const scale = 1 - (index / 25);
-
-        const translateY = 5 * index;
-
-        card.style.transition = 'transform 0.3s ease';
-
-        card.style.transform = `scale(${scale}) translateY(${translateY}px)`;
-
-      });
-
-    }
-
-
-
-    function saveCafe(cafeJSON) {
-
-      const cafe = JSON.parse(cafeJSON);
-
-      let saved = JSON.parse(localStorage.getItem('savedCafes') || '[]');
-
-      if (!saved.find(c => c.place_id === cafe.place_id)) {
-
-        saved.push(cafe);
-
-        localStorage.setItem('savedCafes', JSON.stringify(saved));
-
-        // alert(`${cafe.name} saved!`); // Removing alert for smoother experience
-
-        console.log(`${cafe.name} saved!`);
-
-      } else {
-
-        // alert(`${cafe.name} is already saved.`); // Removing alert
-
-        console.log(`${cafe.name} is already saved.`);
-
-      }
-
-    }
-
-
-
-    function showSaved() {
-
-      const container = document.querySelector('.cards');
-
-      container.innerHTML = '';
-
-      const saved = JSON.parse(localStorage.getItem('savedCafes') || '[]');
-
-      
-
-      // Clear old card styling from saved view
-
-      container.style.display = 'flex';
-
-      container.style.flexDirection = 'column';
-
-      container.style.gap = '20px';
-
-
-
-      if (saved.length === 0) {
-
-        container.innerHTML = '<p>No saved cafes yet 😢</p>';
-
-        return;
-
-      }
-
-      saved.forEach(cafe => {
-
-        const card = document.createElement('div');
-
-        card.className = 'location-card saved-card';
-
-        // Remove swipe wrapper for saved view
-
-        card.innerHTML = `
-
-          <img src="${cafe.photo}" alt="${cafe.name}" />
-
-          <h3>${cafe.name}</h3>
-
-          <p>⭐️ Rating: ${cafe.rating}</p>
-
-          <button onclick="removeSavedCafe('${cafe.place_id}')">Remove</button>
-
-        `;
-
-        container.appendChild(card);
-
-      });
-
-    }
-
-    
-
-    function removeSavedCafe(placeId) {
-
-        let saved = JSON.parse(localStorage.getItem('savedCafes') || '[]');
-
-        saved = saved.filter(cafe => cafe.place_id !== placeId);
-
-        localStorage.setItem('savedCafes', JSON.stringify(saved));
-
-        showSaved(); // Refresh the list
-
-    }
-
-
-
-  </script>
-
+        /**
+         * Removes a saved shop from localStorage and refreshes the display.
+         */
+        function removeSavedShop(placeId) {
+            let saved = JSON.parse(localStorage.getItem('savedMilktea') || '[]');
+            saved = saved.filter(shop => shop.place_id !== placeId);
+            localStorage.setItem('savedMilktea', JSON.stringify(saved));
+            showSaved(); // Refresh the list
+        }
+
+    </script>
+</head>
+<body class="p-4">
+    <div class="container">
+        <header class="header">
+            <h1 class="text-4xl font-extrabold text-[#96C0B7]">Milktea Maven 🧋</h1>
+            <p class="text-sm text-gray-600">Swipe right to save your next boba fix!</p>
+        </header>
+
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="getLocationCachedOrNew()">Find Boba Near Me</button>
+            <button class="btn btn-primary" onclick="showSaved()">Show My Saved Boba</button>
+        </div>
+
+        <!-- Card Swiping Area -->
+        <div class="cards-wrapper" style="margin-top: 30px;">
+            <p class="text-center text-gray-500">Click "Find Boba Near Me" to start searching!</p>
+        </div>
+    </div>
 </body>
-
 </html>
