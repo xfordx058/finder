@@ -117,12 +117,15 @@
             text-align: left;
             padding: 12px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            background-color: white;
+            border-radius: 0.5rem;
         }
         .saved-card img {
             width: 80px;
             height: 80px;
             margin-right: 16px;
             flex-shrink: 0;
+            border-radius: 0.25rem;
         }
         .saved-card div {
             flex-grow: 1;
@@ -141,12 +144,26 @@
         }
     </style>
     <script>
-        // --- Core Application Logic ---
-
+        // --- Core Application Configs ---
+        
         // IMPORTANT: REPLACE THIS WITH YOUR ACTUAL, RESTRICTED GOOGLE PLACES API KEY
         const apiKey = "AIzaSyDk8cpELLpGngE-1uLEGSuG5VnUwTqPq3w"; 
         const API_ENDPOINT = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
         const PHOTO_ENDPOINT = "https://maps.googleapis.com/maps/api/place/photo";
+        const LOCAL_STORAGE_KEY = 'milktea_maven_saved'; // Key for localStorage persistence
+
+        /**
+         * Helper to retrieve saved shops from localStorage.
+         */
+        function getSavedShops() {
+            try {
+                const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                return savedData ? JSON.parse(savedData) : [];
+            } catch (e) {
+                console.error("Error reading localStorage:", e);
+                return [];
+            }
+        }
 
         /**
          * Converts coordinates to a location string for the API.
@@ -162,7 +179,7 @@
         function displayStatusMessage(message, isError = false) {
             const container = document.querySelector('.cards-wrapper');
             const color = isError ? 'text-red-500' : 'text-gray-500';
-            container.innerHTML = `<p class="text-center ${color}">${message}</p>`;
+            container.innerHTML = `<p class="text-center ${color} text-sm font-medium">${message}</p>`;
         }
 
         /**
@@ -208,43 +225,34 @@
         }
         
         /**
-         * TEST MODE: Fetches Milktea shops using a known boba hotspot (Taipei 101 area).
+         * TEST MODE: Fetches Milktea shops using a known boba hotspot (Manila, PH).
          */
-        function fetchTaipeiTest() {
-            // Coordinates for Taipei 101 area, Taiwan (a milk tea epicenter)
-            const taipeiLat = 25.0330;
-            const taipeiLng = 121.5654;
-            fetchMilkteaShops(taipeiLat, taipeiLng, "Taipei, Taiwan");
+        function fetchManilaTest() {
+            // Coordinates for Intramuros/central Manila, Philippines
+            const manilaLat = 14.5995;
+            const manilaLng = 120.9842;
+            fetchMilkteaShops(manilaLat, manilaLng, "Manila, Philippines");
         }
 
 
         /**
-         * Fetches location from cache or asks for a new one via browser geolocation.
+         * Fetches location via browser geolocation (no caching).
          */
-        function getLocationCachedOrNew() {
+        function getLocation() {
             displayStatusMessage('Locating you...');
 
-            const cache = JSON.parse(localStorage.getItem('cachedLocation') || '{}');
-            const now = Date.now();
-            const cacheDuration = 10 * 60 * 1000; // 10 minutes
-
-            if (cache.timestamp && now - cache.timestamp < cacheDuration) {
-                console.log("Using cached location.");
-                fetchMilkteaShops(cache.lat, cache.lng, "your cached location");
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    
+                    fetchMilkteaShops(lat, lng, "your current location");
+                }, (err) => {
+                    console.error("Geolocation Error:", err);
+                    displayStatusMessage('Location access denied or unavailable. Please enable location services.', true);
+                });
             } else {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(pos => {
-                        const lat = pos.coords.latitude;
-                        const lng = pos.coords.longitude;
-                        localStorage.setItem('cachedLocation', JSON.stringify({ lat, lng, timestamp: now }));
-                        fetchMilkteaShops(lat, lng, "your current location");
-                    }, (err) => {
-                        console.error("Geolocation Error:", err);
-                        displayStatusMessage('Location access denied or unavailable. Please enable location services.', true);
-                    });
-                } else {
-                    displayStatusMessage('Geolocation is not supported by your browser.', true);
-                }
+                displayStatusMessage('Geolocation is not supported by your browser.', true);
             }
         }
 
@@ -276,6 +284,7 @@
                     : 'https://placehold.co/400x180/A3C9A8/ffffff?text=Milktea+Shop';
                 
                 const shopData = {
+                    id: shop.place_id, 
                     name: shop.name,
                     place_id: shop.place_id,
                     photo: imgUrl,
@@ -339,7 +348,7 @@
 
 
         /**
-         * Saves the shop and dismisses the card.
+         * Saves the shop (via localStorage) and dismisses the card.
          */
         function saveAndDismiss(wrapper, shopData, direction) {
             saveShop(shopData);
@@ -388,33 +397,38 @@
          * Saves a shop to localStorage.
          */
         function saveShop(shop) {
-            let saved = JSON.parse(localStorage.getItem('savedMilktea') || '[]');
-            if (!saved.find(c => c.place_id === shop.place_id)) {
-                saved.push(shop);
-                localStorage.setItem('savedMilktea', JSON.stringify(saved));
-                // Show a brief, non-alert message for saving
-                displayStatusMessage(`'${shop.name}' saved! Swipe the next card.`, false);
-                // Immediately revert to the default message area content
+            try {
+                const saved = getSavedShops();
+                // Check if shop already exists (to prevent duplicates)
+                if (!saved.some(s => s.place_id === shop.place_id)) {
+                    saved.push(shop);
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(saved));
+                    displayStatusMessage(`'${shop.name}' saved to your collection!`, false);
+                } else {
+                    displayStatusMessage(`'${shop.name}' is already saved!`, false);
+                }
                 setTimeout(() => updateCardStack(), 1500); 
-            } else {
-                // Show a brief, non-alert message for already saved
-                displayStatusMessage(`'${shop.name}' is already saved.`, false);
-                setTimeout(() => updateCardStack(), 1500); 
+            } catch (e) {
+                console.error("Error saving shop to localStorage:", e);
+                displayStatusMessage(`Failed to save '${shop.name}'. Check console.`, true);
             }
         }
 
+
         /**
-         * Displays the list of saved shops.
+         * Displays the list of saved shops from localStorage.
          */
         function showSaved() {
             const container = document.querySelector('.cards-wrapper');
-            container.innerHTML = ''; // Clear swipe stack
+            container.innerHTML = `<p class="text-center text-gray-500 font-semibold">Loading saved shops...</p>`;
             
+            const saved = getSavedShops();
+
+            // Clear and render
+            container.innerHTML = '';
             const savedList = document.createElement('div');
             savedList.className = 'saved-list-wrapper';
 
-            const saved = JSON.parse(localStorage.getItem('savedMilktea') || '[]');
-            
             if (saved.length === 0) {
                 container.innerHTML = '<p class="text-center text-gray-500">You haven\'t saved any Milktea shops yet! 😢</p>';
                 return;
@@ -437,20 +451,26 @@
         }
         
         /**
-         * Removes a saved shop from localStorage and refreshes the display.
+         * Removes a saved shop from localStorage.
          */
         function removeSavedShop(placeId) {
-            let saved = JSON.parse(localStorage.getItem('savedMilktea') || '[]');
-            saved = saved.filter(shop => shop.place_id !== placeId);
-            localStorage.setItem('savedMilktea', JSON.stringify(saved));
-            showSaved(); // Refresh the list
+            try {
+                let saved = getSavedShops();
+                const updatedSaved = saved.filter(shop => shop.place_id !== placeId);
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedSaved));
+                
+                // Re-render the saved list immediately
+                showSaved();
+            } catch (e) {
+                console.error("Error removing shop from localStorage:", e);
+                displayStatusMessage(`Failed to remove shop. Check console.`, true);
+            }
         }
 
-        // Initialize the card wrapper on load
+        // Initialize the status message when the page loads
         window.onload = () => {
-             displayStatusMessage('Click "Find Boba Near Me" to search your area, or "Test with Taipei" to check the API connection.');
+             displayStatusMessage('Ready! Click "Find Boba Near Me" or "Test with Manila".');
         }
-
     </script>
 </head>
 <body class="p-4">
@@ -461,15 +481,15 @@
         </header>
 
         <div class="button-group">
-            <button class="btn btn-primary" onclick="getLocationCachedOrNew()">Find Boba Near Me</button>
-            <button class="btn btn-primary" onclick="showSaved()">Show My Saved Boba</button>
-            <!-- New Test Button -->
-            <button class="btn btn-secondary" onclick="fetchTaipeiTest()">Test with Taipei (Boba Hotspot)</button>
+            <!-- Renamed function to getLocation() and removed disabled -->
+            <button class="btn btn-primary" id="findBobaBtn" onclick="getLocation()">Find Boba Near Me</button>
+            <button class="btn btn-primary" id="showSavedBtn" onclick="showSaved()">Show My Saved Boba</button>
+            <button class="btn btn-secondary" id="testManilaBtn" onclick="fetchManilaTest()">Test with Manila (PH Hotspot)</button>
         </div>
 
         <!-- Card Swiping Area -->
         <div class="cards-wrapper" style="margin-top: 30px;">
-            <!-- Initial status message will be set by window.onload -->
+            <p class="text-center text-gray-500 font-semibold">Initializing app...</p>
         </div>
     </div>
 </body>
