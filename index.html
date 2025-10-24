@@ -14,6 +14,8 @@
         --primary-color: #795548; /* Brown/boba color */
         --accent-color: #ffc107; /* Milk Tea/Cream color */
         --text-color: #333;
+        --light-bg: #f8f8f8;
+        --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
 
       html,
@@ -22,20 +24,22 @@
         margin: 0;
         font-family: 'Poppins', sans-serif;
         color: var(--text-color);
-        overflow: hidden;
+        overflow: hidden; /* Control scrolling explicitly */
       }
 
-      /* --- Header/Title Bar --- */
+      /* --- Main App Layout --- */
+      #app-container {
+        display: flex;
+        flex-direction: column; /* Default to column for mobile-first */
+        height: 100%;
+      }
+
       #header {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
         height: 60px;
         background-color: var(--primary-color);
         color: white;
         display: flex;
-        justify-content: space-between; /* Space for the new button */
+        justify-content: space-between;
         align-items: center;
         padding: 0 20px;
         z-index: 10;
@@ -48,12 +52,84 @@
         font-weight: 700;
       }
 
-      /* --- Map Container --- */
-      #map {
-        height: calc(100% - 60px);
-        width: 100%;
-        margin-top: 60px;
+      #content-area {
+        flex-grow: 1; /* Takes remaining height */
+        display: flex;
+        flex-direction: column; /* Default to column for mobile */
+        overflow: hidden; /* Handle internal scrolling */
       }
+
+      #map {
+        flex: 1; /* Map takes up space */
+        min-height: 250px; /* Minimum height for map on small screens */
+      }
+
+      #cards-feed {
+        flex: 1; /* Cards feed takes up space */
+        overflow-y: auto; /* Scrollable for cards */
+        background-color: var(--light-bg);
+        padding: 15px;
+        display: grid; /* Use grid for cards layout */
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsive columns */
+        gap: 15px;
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      /* --- Media Query for Desktop Layout --- */
+      @media (min-width: 768px) {
+        #content-area {
+          flex-direction: row; /* Side-by-side on larger screens */
+        }
+        #map,
+        #cards-feed {
+          flex: 1; /* Equal width */
+          min-height: initial; /* Reset min-height */
+        }
+        #cards-feed {
+            padding-right: 20px; /* More padding on right side */
+        }
+      }
+
+      /* --- Card Styling --- */
+      .shop-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: var(--shadow-subtle);
+        padding: 15px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        border: 1px solid #eee;
+      }
+
+      .shop-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+      }
+
+      .shop-card h3 {
+        margin: 0 0 5px 0;
+        font-size: 1.2rem;
+        color: var(--primary-color);
+      }
+
+      .shop-card p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #555;
+      }
+
+      .shop-card .rating {
+        font-weight: 600;
+        color: #fbc02d; /* Google yellow for stars */
+      }
+      .shop-card .status {
+        font-weight: 600;
+      }
+      .shop-card .status-open { color: green; }
+      .shop-card .status-closed { color: red; }
 
       /* --- Control Panel (Find Button) --- */
       #panel {
@@ -67,6 +143,8 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 5;
         text-align: center;
+        display: flex; /* For multiple buttons */
+        gap: 10px;
         max-width: 90%;
       }
 
@@ -75,14 +153,15 @@
         background: var(--primary-color);
         color: var(--accent-color);
         border: none;
-        padding: 12px 25px;
+        padding: 10px 20px;
         border-radius: 8px;
         cursor: pointer;
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 600;
         letter-spacing: 0.5px;
         transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
         box-shadow: 0 4px 0 #5d4037;
+        flex-shrink: 0; /* Prevent buttons from shrinking */
       }
 
       .btn:hover {
@@ -112,7 +191,7 @@
           box-shadow: 0 1px 0 #e6b000;
       }
 
-      /* --- Info Window Styling (For Details) --- */
+      /* --- Info Window Styling (For Map Pop-ups) --- */
       .info-content {
         font-family: 'Poppins', sans-serif;
         padding: 0;
@@ -133,10 +212,6 @@
         font-size: 0.9rem;
       }
 
-      .status-open { color: green; font-weight: 600; }
-      .status-closed { color: red; font-weight: 600; }
-
-      /* --- New Save & Directions Button Styles --- */
       .action-buttons {
           margin-top: 10px;
           display: flex;
@@ -148,10 +223,11 @@
           flex: 1;
           padding: 8px 10px;
           border-radius: 6px;
-          font-size: 0.9rem;
+          font-size: 0.85rem; /* Smaller for info window */
           font-weight: 600;
           text-align: center;
           transition: background-color 0.1s;
+          white-space: nowrap; /* Prevent text wrapping */
       }
       
       .save-btn {
@@ -176,26 +252,46 @@
       .direction-link:hover {
           background: #3367d6;
       }
+      
+      #clear-results-btn {
+          background: #f44336; /* Red for clear */
+          box-shadow: 0 4px 0 #d32f2f;
+      }
+      #clear-results-btn:hover {
+          background: #d32f2f;
+          box-shadow: 0 2px 0 #d32f2f;
+      }
     </style>
   </head>
   <body>
-    <div id="header">
-      <h1>🥤 Milk Tea Finder</h1>
-      <button id="saved-list-btn" onclick="showSavedPlaces()">
-        ❤️ Saved Shops
-      </button>
-    </div>
+    <div id="app-container">
+      <div id="header">
+        <h1>🥤 Milk Tea Finder</h1>
+        <button id="saved-list-btn" class="btn" onclick="showSavedPlaces()">
+          ❤️ Saved Shops
+        </button>
+      </div>
 
-    <div id="map"></div>
+      <div id="content-area">
+        <div id="map"></div>
+        <div id="cards-feed">
+          <p style="text-align: center; color: #777;">Click "Find Milk Tea Near Me" to see shops here!</p>
+        </div>
+      </div>
 
-    <div id="panel">
-      <button class="btn" onclick="findMilkTea()">📍 Find Milk Tea Near Me</button>
+      <div id="panel">
+        <button class="btn" onclick="findMilkTea()">📍 Find Milk Tea Near Me</button>
+        <button class="btn" id="clear-results-btn" onclick="clearAllResults()">🗑️ Clear Results</button>
+      </div>
     </div>
 
     <script>
       let map, service, infoWindow;
-      let markers = [];
-      const DEFAULT_CENTER = { lat: 14.5995, lng: 120.9842 };
+      let markers = []; // Stores Google Maps markers
+      let fetchedPlacesDetails = {}; // Cache for place details
+      let userCurrentLocation = null; // Store user's current location for directions
+
+      const DEFAULT_CENTER = { lat: 14.5995, lng: 120.9842 }; // Manila default
 
       function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
@@ -207,22 +303,21 @@
       }
 
       function findMilkTea() {
-        clearMarkers();
+        clearAllResults(); // Clear previous results and cards
 
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
-              const userLocation = {
+              userCurrentLocation = {
                 lat: position.coords.latitude,
                 lng: position.coords.longitude,
               };
 
-              map.setCenter(userLocation);
+              map.setCenter(userCurrentLocation);
               map.setZoom(15);
 
-              // User location marker
               new google.maps.Marker({
-                position: userLocation,
+                position: userCurrentLocation,
                 map: map,
                 title: 'You are here',
                 icon: {
@@ -232,22 +327,37 @@
               });
 
               const request = {
-                location: userLocation,
+                location: userCurrentLocation,
                 radius: 3000,
                 keyword: 'milk tea',
               };
 
               service.nearbySearch(request, (results, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                  for (let place of results) {
+                  document.getElementById('cards-feed').innerHTML = ''; // Clear initial message
+
+                  results.forEach(place => {
                     createMarker(place);
-                  }
+                    // Immediately fetch details to populate the card accurately
+                    service.getDetails({ placeId: place.place_id }, (details, detailStatus) => {
+                        if (detailStatus === google.maps.places.PlacesServiceStatus.OK) {
+                            fetchedPlacesDetails[place.place_id] = details; // Cache details
+                            createShopCard(details);
+                        } else {
+                            // Fallback for card if details fail
+                            createShopCard(place); 
+                            console.error('Details request failed for card:', detailStatus, place.name);
+                        }
+                    });
+                  });
+
                   if (results.length === 0) {
-                      alert('No Milk Tea spots found within 3km.');
+                      document.getElementById('cards-feed').innerHTML = '<p style="text-align: center; color: #777;">No Milk Tea spots found within 3km.</p>';
                   }
                 } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-                    alert('No Milk Tea spots found within 3km.');
+                    document.getElementById('cards-feed').innerHTML = '<p style="text-align: center; color: #777;">No Milk Tea spots found within 3km.</p>';
                 } else {
+                    alert('Error finding milk tea shops: ' + status);
                     console.error('Places service failed:', status);
                 }
               });
@@ -276,32 +386,77 @@
           position: place.geometry.location,
           title: place.name,
           icon: bobaIcon,
+          placeId: place.place_id // Store placeId on marker for later lookup
         });
 
         markers.push(marker);
-
+        
+        // --- Marker Click now just opens the info window using cached data ---
         google.maps.event.addListener(marker, 'click', () => {
-          infoWindow.setContent('<div class="info-content"><h4>Loading Details...</h4></div>');
-          infoWindow.open(map, marker);
-
-          service.getDetails(
-            { placeId: place.place_id },
-            (details, status) => {
-              if (status === google.maps.places.PlacesServiceStatus.OK) {
+            const details = fetchedPlacesDetails[place.place_id];
+            if (details) {
                 const htmlContent = buildInfoContent(details);
                 infoWindow.setContent(htmlContent);
-              } else {
-                infoWindow.setContent(
-                  `<div class="info-content"><h4>${place.name}</h4><p>Could not load full details.</p><p>${place.vicinity}</p></div>`
-                );
-                console.error('Details request failed:', status);
-              }
+            } else {
+                infoWindow.setContent(`<div class="info-content"><h4>${place.name}</h4><p>Loading details...</p></div>`);
             }
-          );
+            infoWindow.open(map, marker);
+            map.setCenter(marker.getPosition()); // Center map on clicked marker
         });
       }
+
+      // --- NEW FUNCTION: Create a shop card for the feed ---
+      function createShopCard(details) {
+        const cardsFeed = document.getElementById('cards-feed');
+        const card = document.createElement('div');
+        card.className = 'shop-card';
+        card.setAttribute('data-place-id', details.place_id);
+
+        const rating = details.rating ? `<span class="rating">${details.rating} ⭐</span> (${details.user_ratings_total || 0})` : 'No rating';
+        const address = details.vicinity || details.formatted_address || 'Address unavailable';
+        const statusText = details.opening_hours && details.opening_hours.open_now !== undefined
+          ? `<span class="status ${details.opening_hours.open_now ? 'status-open' : 'status-closed'}">${details.opening_hours.open_now ? 'Open Now' : 'Closed'}</span>`
+          : 'Status unknown';
+
+        // Sanitize the place name for the onclick function
+        const sanitizedName = details.name.replace(/'/g, "\\'"); 
+        
+        let savedPlaces = getSavedPlaces();
+        const isPlaceSaved = savedPlaces.hasOwnProperty(details.place_id);
+
+        card.innerHTML = `
+          <h3>${details.name}</h3>
+          <p>${address}</p>
+          <p>${rating} • ${statusText}</p>
+          <div class="action-buttons">
+              <button 
+                  id="save-btn-${details.place_id}" 
+                  class="save-btn ${isPlaceSaved ? 'saved' : ''}" 
+                  onclick="event.stopPropagation(); toggleSaved('${details.place_id}', '${sanitizedName}')">
+                  ${isPlaceSaved ? '🌟 Saved!' : '⭐ Save'}
+              </button>
+              <a class="direction-link" 
+                 href="${getDirectionsUrl(details.place_id, details.name, details.formatted_address)}" 
+                 target="_blank" 
+                 onclick="event.stopPropagation();">
+                  🗺️ Get Directions
+              </a>
+          </div>
+        `;
+
+        // When a card is clicked, find its marker and trigger a click event on it
+        card.addEventListener('click', () => {
+            const placeId = card.getAttribute('data-place-id');
+            const marker = markers.find(m => m.placeId === placeId);
+            if (marker) {
+                google.maps.event.trigger(marker, 'click'); // Open info window on map
+            }
+        });
+
+        cardsFeed.appendChild(card);
+      }
       
-      // --- NEW FUNCTION: Build Info Window Content with New Features ---
+      // Re-use buildInfoContent for map info window
       function buildInfoContent(details) {
         const rating = details.rating ? `<p>Rating: <strong>${details.rating} ⭐</strong> (${details.user_ratings_total} reviews)</p>` : '';
         const address = details.formatted_address ? `<p>${details.formatted_address}</p>` : '';
@@ -311,10 +466,8 @@
           : '';
         const mapLink = details.url ? `<a class="view-map-link" href="${details.url}" target="_blank">View on Google Maps</a>` : '';
         
-        // Sanitize the place name for the onclick function
         const sanitizedName = details.name.replace(/'/g, "\\'"); 
         
-        // --- Saved Feature Button HTML ---
         let savedPlaces = getSavedPlaces();
         const isPlaceSaved = savedPlaces.hasOwnProperty(details.place_id);
 
@@ -327,11 +480,10 @@
             </button>
         `;
 
-        // --- Directions Feature Link HTML ---
-        // 'Current+Location' tells Google Maps to use the user's current location as the origin.
-        const directionsUrl = `https://www.google.com/maps/dir/Current+Location/${encodeURIComponent(details.formatted_address || details.name)}`;
         const directionsLinkHtml = `
-            <a class="direction-link" href="${directionsUrl}" target="_blank">
+            <a class="direction-link" 
+               href="${getDirectionsUrl(details.place_id, details.name, details.formatted_address)}" 
+               target="_blank">
                 🗺️ Get Directions
             </a>
         `;
@@ -354,42 +506,46 @@
       
       // --- LOCAL STORAGE FUNCTIONS (Saved Features) ---
       
-      // Retrieve the saved places object from Local Storage
       function getSavedPlaces() {
           const saved = localStorage.getItem('milkteaFinderSaved');
-          // Stores as {placeId: placeName, ...} for easy lookup
           return saved ? JSON.parse(saved) : {}; 
       }
 
-      // Add or remove a place ID from local storage
       function toggleSaved(placeId, placeName) {
           let savedPlaces = getSavedPlaces();
-          const saveButton = document.getElementById(`save-btn-${placeId}`);
+          
+          // Update the button on the card if it exists
+          const cardSaveButton = document.querySelector(`.shop-card[data-place-id="${placeId}"] .save-btn`);
+          // Update the button in the info window if it's open
+          const infoWindowSaveButton = document.getElementById(`save-btn-${placeId}`);
 
           if (savedPlaces.hasOwnProperty(placeId)) {
-              // Unsave
               delete savedPlaces[placeId];
-              if (saveButton) { // Check if the button exists on the map info window
-                saveButton.textContent = '⭐ Save';
-                saveButton.classList.remove('saved');
+              if (cardSaveButton) {
+                cardSaveButton.textContent = '⭐ Save';
+                cardSaveButton.classList.remove('saved');
+              }
+              if (infoWindowSaveButton) { // For info window button
+                infoWindowSaveButton.textContent = '⭐ Save';
+                infoWindowSaveButton.classList.remove('saved');
               }
               console.log(`Unsaved: ${placeName}`);
           } else {
-              // Save
               savedPlaces[placeId] = placeName;
-              if (saveButton) {
-                saveButton.textContent = '🌟 Saved!';
-                saveButton.classList.add('saved');
+              if (cardSaveButton) {
+                cardSaveButton.textContent = '🌟 Saved!';
+                cardSaveButton.classList.add('saved');
+              }
+              if (infoWindowSaveButton) { // For info window button
+                infoWindowSaveButton.textContent = '🌟 Saved!';
+                infoWindowSaveButton.classList.add('saved');
               }
               console.log(`Saved: ${placeName}`);
           }
           
           localStorage.setItem('milkteaFinderSaved', JSON.stringify(savedPlaces));
-          // If the saved list is open (e.g., in an alert), it won't dynamically update,
-          // but the state in Local Storage is correct.
       }
       
-      // Display the list of saved places (using an alert for simplicity)
       function showSavedPlaces() {
           const savedPlaces = getSavedPlaces();
           const placeIds = Object.keys(savedPlaces);
@@ -402,25 +558,42 @@
           let list = "Your Favorite Milk Tea Shops:\n\n";
           placeIds.forEach(id => {
               const name = savedPlaces[id];
-              // Provide a simple link to search for the place on Maps
-              const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${id}`;
               list += `• ${name}\n`;
           });
           
-          list += "\n(Check the map markers for shops you've already found!)";
-
           alert(list);
       }
       // --- END LOCAL STORAGE FUNCTIONS ---
 
-      function clearMarkers() {
+      // --- DIRECTIONS FUNCTION ---
+      function getDirectionsUrl(placeId, placeName, formattedAddress) {
+          // If we have the user's current location, use it as the origin
+          const origin = userCurrentLocation 
+            ? `${userCurrentLocation.lat},${userCurrentLocation.lng}` 
+            : 'Current+Location'; // Fallback to 'Current+Location' for Google Maps
+            
+          // Use place_id for destination if available, otherwise fallback to address/name
+          const destination = placeId 
+            ? `place_id:${placeId}` 
+            : encodeURIComponent(formattedAddress || placeName);
+
+          return `http://googleusercontent.com/maps.google.com/4${origin}&destination=${destination}&travelmode=driving`;
+      }
+
+      function clearAllResults() {
           for (let i = 0; i < markers.length; i++) {
               markers[i].setMap(null);
           }
           markers = [];
+          fetchedPlacesDetails = {}; // Clear cached details
           if (infoWindow) {
               infoWindow.close();
           }
+          document.getElementById('cards-feed').innerHTML = '<p style="text-align: center; color: #777;">Click "Find Milk Tea Near Me" to see shops here!</p>';
+          
+          // Reset map center if desired, or keep it as is
+          map.setCenter(DEFAULT_CENTER); 
+          map.setZoom(14);
       }
     </script>
 
