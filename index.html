@@ -14,17 +14,15 @@
         --primary-color: #795548; /* Brown/boba color */
         --accent-color: #ffc107; /* Milk Tea/Cream color */
         --text-color: #333;
-        --light-bg: #f5f5f5;
-        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
 
       html,
       body {
         height: 100%;
         margin: 0;
-        font-family: 'Poppins', sans-serif; /* Modern, readable font */
+        font-family: 'Poppins', sans-serif;
         color: var(--text-color);
-        overflow: hidden; /* Prevent body scroll, map handles it */
+        overflow: hidden;
       }
 
       /* --- Header/Title Bar --- */
@@ -37,9 +35,10 @@
         background-color: var(--primary-color);
         color: white;
         display: flex;
+        justify-content: space-between; /* Space for the new button */
         align-items: center;
         padding: 0 20px;
-        z-index: 10; /* Above the map */
+        z-index: 10;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       }
 
@@ -51,46 +50,45 @@
 
       /* --- Map Container --- */
       #map {
-        /* Take up full height, allowing for the header */
-        height: calc(100% - 60px); 
+        height: calc(100% - 60px);
         width: 100%;
-        margin-top: 60px; /* Push map below the header */
+        margin-top: 60px;
       }
 
-      /* --- Control Panel (Button) --- */
+      /* --- Control Panel (Find Button) --- */
       #panel {
         position: absolute;
-        bottom: 20px; /* Position at the bottom */
-        left: 50%; /* Center horizontally */
+        bottom: 20px;
+        left: 50%;
         transform: translateX(-50%);
-        background: rgba(255, 255, 255, 0.95); /* Slightly translucent white backdrop */
+        background: rgba(255, 255, 255, 0.95);
         padding: 15px;
         border-radius: 12px;
-        box-shadow: var(--shadow-light);
-        z-index: 5; /* Above the map, below the header */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 5;
         text-align: center;
-        max-width: 90%; /* For mobile responsiveness */
+        max-width: 90%;
       }
 
-      /* --- Button Style --- */
+      /* --- Button Style (General) --- */
       .btn {
         background: var(--primary-color);
-        color: var(--accent-color); /* Milk Tea yellow accent on text */
+        color: var(--accent-color);
         border: none;
-        padding: 12px 25px; /* Larger padding */
+        padding: 12px 25px;
         border-radius: 8px;
         cursor: pointer;
         font-size: 1.1rem;
         font-weight: 600;
         letter-spacing: 0.5px;
         transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
-        box-shadow: 0 4px 0 var(--primary-color); /* Simple 3D effect */
+        box-shadow: 0 4px 0 #5d4037;
       }
 
       .btn:hover {
-        background: #5d4037; /* Darker brown on hover */
+        background: #5d4037;
         box-shadow: 0 2px 0 #5d4037;
-        transform: translateY(2px); /* Button press effect */
+        transform: translateY(2px);
       }
 
       .btn:active {
@@ -98,17 +96,94 @@
         box-shadow: none;
         transform: translateY(4px);
       }
+      
+      /* --- Saved List Button in Header --- */
+      #saved-list-btn {
+        background: var(--accent-color);
+        color: var(--primary-color);
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 3px 0 #e6b000;
+      }
+      
+      #saved-list-btn:hover {
+          background: #e6b000;
+          box-shadow: 0 1px 0 #e6b000;
+      }
 
-      /* --- Google Maps Info Window Customization (Basic) --- */
-      .gm-style .gm-style-iw-d {
+      /* --- Info Window Styling (For Details) --- */
+      .info-content {
         font-family: 'Poppins', sans-serif;
-        font-size: 14px;
+        padding: 0;
+        max-width: 250px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .info-content h4 {
+        margin: 0 0 5px 0;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+      }
+
+      .info-content p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+
+      .status-open { color: green; font-weight: 600; }
+      .status-closed { color: red; font-weight: 600; }
+
+      /* --- New Save & Directions Button Styles --- */
+      .action-buttons {
+          margin-top: 10px;
+          display: flex;
+          justify-content: space-between;
+          gap: 5px;
+      }
+      
+      .save-btn, .direction-link {
+          flex: 1;
+          padding: 8px 10px;
+          border-radius: 6px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-align: center;
+          transition: background-color 0.1s;
+      }
+      
+      .save-btn {
+          background: #f0f0f0;
+          color: var(--text-color);
+          border: 1px solid #ccc;
+          cursor: pointer;
+      }
+      
+      .save-btn.saved {
+          background: var(--accent-color);
+          color: var(--primary-color);
+          border: 1px solid var(--accent-color);
+      }
+      
+      .direction-link {
+          background: #4285f4; /* Google Blue */
+          color: white;
+          text-decoration: none;
+      }
+      
+      .direction-link:hover {
+          background: #3367d6;
       }
     </style>
   </head>
   <body>
     <div id="header">
       <h1>🥤 Milk Tea Finder</h1>
+      <button id="saved-list-btn" onclick="showSavedPlaces()">
+        ❤️ Saved Shops
+      </button>
     </div>
 
     <div id="map"></div>
@@ -119,25 +194,20 @@
 
     <script>
       let map, service, infoWindow;
-      const DEFAULT_CENTER = { lat: 14.5995, lng: 120.9842 }; // Manila default
+      let markers = [];
+      const DEFAULT_CENTER = { lat: 14.5995, lng: 120.9842 };
 
       function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
           center: DEFAULT_CENTER,
           zoom: 14,
-          // Optional: Add a custom map style for a cleaner look
-          // styles: [
-          //   { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
-          // ]
         });
         infoWindow = new google.maps.InfoWindow();
-        // Automatically try to find milk tea on load (optional)
-        // findMilkTea(); 
+        service = new google.maps.places.PlacesService(map);
       }
 
       function findMilkTea() {
-        // 1. Clear previous markers (optional, but good practice)
-        clearMarkers(); 
+        clearMarkers();
 
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -148,7 +218,7 @@
               };
 
               map.setCenter(userLocation);
-              map.setZoom(15); // Zoom in closer after finding location
+              map.setZoom(15);
 
               // User location marker
               new google.maps.Marker({
@@ -156,52 +226,35 @@
                 map: map,
                 title: 'You are here',
                 icon: {
-                  url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', // Clearer user marker
+                  url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
                   scaledSize: new google.maps.Size(40, 40),
                 },
               });
 
               const request = {
                 location: userLocation,
-                radius: 3000, // Increased to 3km for better results
+                radius: 3000,
                 keyword: 'milk tea',
               };
 
-              service = new google.maps.places.PlacesService(map);
               service.nearbySearch(request, (results, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK && results) {
                   for (let place of results) {
                     createMarker(place);
                   }
                   if (results.length === 0) {
-                      alert('No Milk Tea spots found within 3km. Try another location!');
+                      alert('No Milk Tea spots found within 3km.');
                   }
                 } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-                    alert('No Milk Tea spots found within 3km. Try another location!');
+                    alert('No Milk Tea spots found within 3km.');
                 } else {
                     console.error('Places service failed:', status);
                 }
               });
             },
             (error) => {
-              // Geolocation error handler
-              let errorMessage = 'Geolocation error: ';
-              switch (error.code) {
-                case error.PERMISSION_DENIED:
-                  errorMessage += 'User denied the request for Geolocation.';
-                  break;
-                case error.POSITION_UNAVAILABLE:
-                  errorMessage += 'Location information is unavailable.';
-                  break;
-                case error.TIMEOUT:
-                  errorMessage += 'The request to get user location timed out.';
-                  break;
-                case error.UNKNOWN_ERROR:
-                  errorMessage += 'An unknown error occurred.';
-                  break;
-              }
-              alert(errorMessage);
-              map.setCenter(DEFAULT_CENTER); // Fallback to default
+              alert('Geolocation failed: ' + error.message);
+              map.setCenter(DEFAULT_CENTER);
             }
           );
         } else {
@@ -209,13 +262,9 @@
         }
       }
 
-      // Array to store markers for clearing them later
-      let markers = []; 
-
       function createMarker(place) {
         if (!place.geometry || !place.geometry.location) return;
-        
-        // Custom boba-like marker icon
+
         const bobaIcon = {
             url: "data:image/svg+xml;charset=UTF-8,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23795548'/%3E%3Ccircle cx='12' cy='12' r='4' fill='%23FFC107'/%3E%3Cpath d='M10 14L14 10' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E",
             scaledSize: new google.maps.Size(35, 35),
@@ -229,26 +278,149 @@
           icon: bobaIcon,
         });
 
-        markers.push(marker); // Store the marker
+        markers.push(marker);
 
         google.maps.event.addListener(marker, 'click', () => {
-          infoWindow.setContent(`
-            <div style="padding: 5px;">
-                <strong style="font-size: 16px; color: var(--primary-color);">${place.name}</strong>
-                <br>
-                ${place.vicinity || ''}
-                ${place.rating ? `<br>Rating: ${place.rating} ⭐` : ''}
-            </div>
-          `);
+          infoWindow.setContent('<div class="info-content"><h4>Loading Details...</h4></div>');
           infoWindow.open(map, marker);
+
+          service.getDetails(
+            { placeId: place.place_id },
+            (details, status) => {
+              if (status === google.maps.places.PlacesServiceStatus.OK) {
+                const htmlContent = buildInfoContent(details);
+                infoWindow.setContent(htmlContent);
+              } else {
+                infoWindow.setContent(
+                  `<div class="info-content"><h4>${place.name}</h4><p>Could not load full details.</p><p>${place.vicinity}</p></div>`
+                );
+                console.error('Details request failed:', status);
+              }
+            }
+          );
         });
       }
       
+      // --- NEW FUNCTION: Build Info Window Content with New Features ---
+      function buildInfoContent(details) {
+        const rating = details.rating ? `<p>Rating: <strong>${details.rating} ⭐</strong> (${details.user_ratings_total} reviews)</p>` : '';
+        const address = details.formatted_address ? `<p>${details.formatted_address}</p>` : '';
+        const phone = details.formatted_phone_number ? `<p>Call: ${details.formatted_phone_number}</p>` : '';
+        const status = details.opening_hours 
+          ? `<p>Status: <span class="${details.opening_hours.open_now ? 'status-open' : 'status-closed'}">${details.opening_hours.open_now ? 'Open Now' : 'Closed'}</span></p>`
+          : '';
+        const mapLink = details.url ? `<a class="view-map-link" href="${details.url}" target="_blank">View on Google Maps</a>` : '';
+        
+        // Sanitize the place name for the onclick function
+        const sanitizedName = details.name.replace(/'/g, "\\'"); 
+        
+        // --- Saved Feature Button HTML ---
+        let savedPlaces = getSavedPlaces();
+        const isPlaceSaved = savedPlaces.hasOwnProperty(details.place_id);
+
+        const saveButtonHtml = `
+            <button 
+                id="save-btn-${details.place_id}" 
+                class="save-btn ${isPlaceSaved ? 'saved' : ''}" 
+                onclick="toggleSaved('${details.place_id}', '${sanitizedName}')">
+                ${isPlaceSaved ? '🌟 Saved!' : '⭐ Save'}
+            </button>
+        `;
+
+        // --- Directions Feature Link HTML ---
+        // 'Current+Location' tells Google Maps to use the user's current location as the origin.
+        const directionsUrl = `https://www.google.com/maps/dir/Current+Location/${encodeURIComponent(details.formatted_address || details.name)}`;
+        const directionsLinkHtml = `
+            <a class="direction-link" href="${directionsUrl}" target="_blank">
+                🗺️ Get Directions
+            </a>
+        `;
+        
+        return `
+          <div class="info-content">
+            <h4>${details.name}</h4>
+            ${status}
+            ${rating}
+            ${address}
+            ${phone}
+            ${mapLink}
+            <div class="action-buttons">
+                ${saveButtonHtml}
+                ${directionsLinkHtml}
+            </div>
+          </div>
+        `;
+      }
+      
+      // --- LOCAL STORAGE FUNCTIONS (Saved Features) ---
+      
+      // Retrieve the saved places object from Local Storage
+      function getSavedPlaces() {
+          const saved = localStorage.getItem('milkteaFinderSaved');
+          // Stores as {placeId: placeName, ...} for easy lookup
+          return saved ? JSON.parse(saved) : {}; 
+      }
+
+      // Add or remove a place ID from local storage
+      function toggleSaved(placeId, placeName) {
+          let savedPlaces = getSavedPlaces();
+          const saveButton = document.getElementById(`save-btn-${placeId}`);
+
+          if (savedPlaces.hasOwnProperty(placeId)) {
+              // Unsave
+              delete savedPlaces[placeId];
+              if (saveButton) { // Check if the button exists on the map info window
+                saveButton.textContent = '⭐ Save';
+                saveButton.classList.remove('saved');
+              }
+              console.log(`Unsaved: ${placeName}`);
+          } else {
+              // Save
+              savedPlaces[placeId] = placeName;
+              if (saveButton) {
+                saveButton.textContent = '🌟 Saved!';
+                saveButton.classList.add('saved');
+              }
+              console.log(`Saved: ${placeName}`);
+          }
+          
+          localStorage.setItem('milkteaFinderSaved', JSON.stringify(savedPlaces));
+          // If the saved list is open (e.g., in an alert), it won't dynamically update,
+          // but the state in Local Storage is correct.
+      }
+      
+      // Display the list of saved places (using an alert for simplicity)
+      function showSavedPlaces() {
+          const savedPlaces = getSavedPlaces();
+          const placeIds = Object.keys(savedPlaces);
+          
+          if (placeIds.length === 0) {
+              alert("You haven't saved any milk tea shops yet!");
+              return;
+          }
+          
+          let list = "Your Favorite Milk Tea Shops:\n\n";
+          placeIds.forEach(id => {
+              const name = savedPlaces[id];
+              // Provide a simple link to search for the place on Maps
+              const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${id}`;
+              list += `• ${name}\n`;
+          });
+          
+          list += "\n(Check the map markers for shops you've already found!)";
+
+          alert(list);
+      }
+      // --- END LOCAL STORAGE FUNCTIONS ---
+
       function clearMarkers() {
           for (let i = 0; i < markers.length; i++) {
               markers[i].setMap(null);
           }
           markers = [];
+          if (infoWindow) {
+              infoWindow.close();
+          }
       }
     </script>
 
@@ -258,4 +430,3 @@
     ></script>
   </body>
 </html>
-
