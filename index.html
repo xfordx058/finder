@@ -41,6 +41,7 @@
         .button-group {
             display: flex;
             gap: 12px;
+            flex-wrap: wrap; /* Allows buttons to wrap on small screens */
             justify-content: center;
             margin-bottom: 24px;
         }
@@ -51,6 +52,7 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            white-space: nowrap; /* Prevent button text from wrapping */
         }
         .btn-primary {
             background-color: var(--primary-color);
@@ -60,6 +62,14 @@
         .btn-primary:hover {
             background-color: #8bb190;
             box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #709475;
+            border: 2px solid #ddd;
+        }
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
         }
         /* Card Styling for Swiping */
         .cards-wrapper {
@@ -147,46 +157,24 @@
         const getLocationString = (lat, lng) => `${lat},${lng}`;
 
         /**
-         * Fetches location from cache or asks for a new one via browser geolocation.
+         * Clears the card wrapper and displays a message.
          */
-        function getLocationCachedOrNew() {
+        function displayStatusMessage(message, isError = false) {
             const container = document.querySelector('.cards-wrapper');
-            container.innerHTML = '<p class="text-center text-gray-500">Locating you...</p>';
-
-            const cache = JSON.parse(localStorage.getItem('cachedLocation') || '{}');
-            const now = Date.now();
-            const cacheDuration = 10 * 60 * 1000; // 10 minutes
-
-            if (cache.timestamp && now - cache.timestamp < cacheDuration) {
-                console.log("Using cached location.");
-                fetchMilkteaShops(cache.lat, cache.lng);
-            } else {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(pos => {
-                        const lat = pos.coords.latitude;
-                        const lng = pos.coords.longitude;
-                        localStorage.setItem('cachedLocation', JSON.stringify({ lat, lng, timestamp: now }));
-                        fetchMilkteaShops(lat, lng);
-                    }, (err) => {
-                        console.error("Geolocation Error:", err);
-                        container.innerHTML = '<p class="text-center text-red-500">Location access denied or unavailable. Please enable location services.</p>';
-                    });
-                } else {
-                    container.innerHTML = '<p class="text-center text-red-500">Geolocation is not supported by your browser.</p>';
-                }
-            }
+            const color = isError ? 'text-red-500' : 'text-gray-500';
+            container.innerHTML = `<p class="text-center ${color}">${message}</p>`;
         }
 
         /**
-         * Fetches nearby Milktea shops using the Google Places API.
+         * Fetches nearby Milktea shops using a specified location.
          */
-        async function fetchMilkteaShops(lat, lng) {
-            const container = document.querySelector('.cards-wrapper');
-            container.innerHTML = '<p class="text-center text-gray-500">Searching for Milktea...</p>';
+        async function fetchMilkteaShops(lat, lng, locationName = "your location") {
+            displayStatusMessage(`Searching for Milktea near ${locationName}...`);
 
             // Use 'restaurant' type + 'milktea|boba|bubble tea' keyword for best results
             const keyword = 'milktea|boba|bubble%20tea'; 
-            const endpoint = `${API_ENDPOINT}?location=${getLocationString(lat, lng)}&radius=3000&type=restaurant&keyword=${keyword}&key=${apiKey}`;
+            // 5000 meters (5km) radius
+            const endpoint = `${API_ENDPOINT}?location=${getLocationString(lat, lng)}&radius=5000&type=restaurant&keyword=${keyword}&key=${apiKey}`;
 
             try {
                 const response = await fetch(endpoint);
@@ -194,7 +182,7 @@
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error("HTTP Error:", response.status, response.statusText, errorText);
-                    container.innerHTML = `<p class="text-center text-red-500">Request failed: HTTP Status ${response.status}. Check console for API key or restriction issues.</p>`;
+                    displayStatusMessage(`Request failed: HTTP Status ${response.status}. Check console for API key or restriction issues.`, true);
                     return;
                 }
 
@@ -202,18 +190,61 @@
 
                 if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
                     console.error("Places API Status Error:", data.status, data.error_message || "");
-                    container.innerHTML = `<p class="text-center text-red-500">API Error: ${data.status}. Did you enable the Places API and use a valid key?</p>`;
+                    // API Status can be REQUEST_DENIED if key is invalid/not enabled
+                    let msg = `API Error: ${data.status}. Did you enable the Places API and use a valid key?`;
+                    displayStatusMessage(msg, true);
                     return;
                 }
 
                 if (data.results && data.results.length > 0) {
                     displaySwipeCards(data.results);
                 } else {
-                    container.innerHTML = '<p class="text-center text-gray-500">No Milktea shops found near you 😢</p>';
+                    displayStatusMessage(`No Milktea shops found near ${locationName} 😢`);
                 }
             } catch (e) {
                 console.error("Network or Parsing Error:", e);
-                container.innerHTML = '<p class="text-center text-red-500">A network error occurred. Check your internet connection.</p>';
+                displayStatusMessage('A network error occurred. Check your internet connection.', true);
+            }
+        }
+        
+        /**
+         * TEST MODE: Fetches Milktea shops using a known boba hotspot (Taipei 101 area).
+         */
+        function fetchTaipeiTest() {
+            // Coordinates for Taipei 101 area, Taiwan (a milk tea epicenter)
+            const taipeiLat = 25.0330;
+            const taipeiLng = 121.5654;
+            fetchMilkteaShops(taipeiLat, taipeiLng, "Taipei, Taiwan");
+        }
+
+
+        /**
+         * Fetches location from cache or asks for a new one via browser geolocation.
+         */
+        function getLocationCachedOrNew() {
+            displayStatusMessage('Locating you...');
+
+            const cache = JSON.parse(localStorage.getItem('cachedLocation') || '{}');
+            const now = Date.now();
+            const cacheDuration = 10 * 60 * 1000; // 10 minutes
+
+            if (cache.timestamp && now - cache.timestamp < cacheDuration) {
+                console.log("Using cached location.");
+                fetchMilkteaShops(cache.lat, cache.lng, "your cached location");
+            } else {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        localStorage.setItem('cachedLocation', JSON.stringify({ lat, lng, timestamp: now }));
+                        fetchMilkteaShops(lat, lng, "your current location");
+                    }, (err) => {
+                        console.error("Geolocation Error:", err);
+                        displayStatusMessage('Location access denied or unavailable. Please enable location services.', true);
+                    });
+                } else {
+                    displayStatusMessage('Geolocation is not supported by your browser.', true);
+                }
             }
         }
 
@@ -361,9 +392,14 @@
             if (!saved.find(c => c.place_id === shop.place_id)) {
                 saved.push(shop);
                 localStorage.setItem('savedMilktea', JSON.stringify(saved));
-                console.log(`${shop.name} saved!`);
+                // Show a brief, non-alert message for saving
+                displayStatusMessage(`'${shop.name}' saved! Swipe the next card.`, false);
+                // Immediately revert to the default message area content
+                setTimeout(() => updateCardStack(), 1500); 
             } else {
-                console.log(`${shop.name} is already saved.`);
+                // Show a brief, non-alert message for already saved
+                displayStatusMessage(`'${shop.name}' is already saved.`, false);
+                setTimeout(() => updateCardStack(), 1500); 
             }
         }
 
@@ -410,23 +446,30 @@
             showSaved(); // Refresh the list
         }
 
+        // Initialize the card wrapper on load
+        window.onload = () => {
+             displayStatusMessage('Click "Find Boba Near Me" to search your area, or "Test with Taipei" to check the API connection.');
+        }
+
     </script>
 </head>
 <body class="p-4">
     <div class="container">
         <header class="header">
-            <h1 class="text-4xl font-extrabold text-[#96C0B7]">Milktea Maven 🧋</h1>
-            <p class="text-sm text-gray-600">Swipe right to save your next boba fix!</p>
+            <h1 class="text-4xl font-extrabold text-[#709475]">Milktea Maven 🧋</h1>
+            <p class="text-sm text-gray-600">Swipe right to save your next boba fix! (Radius: 5km)</p>
         </header>
 
         <div class="button-group">
             <button class="btn btn-primary" onclick="getLocationCachedOrNew()">Find Boba Near Me</button>
             <button class="btn btn-primary" onclick="showSaved()">Show My Saved Boba</button>
+            <!-- New Test Button -->
+            <button class="btn btn-secondary" onclick="fetchTaipeiTest()">Test with Taipei (Boba Hotspot)</button>
         </div>
 
         <!-- Card Swiping Area -->
         <div class="cards-wrapper" style="margin-top: 30px;">
-            <p class="text-center text-gray-500">Click "Find Boba Near Me" to start searching!</p>
+            <!-- Initial status message will be set by window.onload -->
         </div>
     </div>
 </body>
