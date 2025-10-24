@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <title>Cafe Curator</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕️</text></svg>">
+
+  <link href="https://fonts.googleapis.com/css2?family=Savate:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+  <h1>☕️ Cafe Curator 🍵</h1>
+
+  <p>Find and save the best cafes near you.</p>
+
+
+
+  <div>
+
+    <button onclick="getLocationCachedOrNew()">Find Cafes Near Me</button>
+
+    <button onclick="showSaved()">Show Saved Cafes</button>
+
+  </div>
+
+
+
+  <div class="cards"></div>
+
+
+
+  <script>
+
+    // IMPORTANT: Replace this with your actual, restricted API key.
+
+    const apiKey = "AIzaSyDk8cpELLpGngE-1uLEGSuG5VnUwTqPq3w"; // 🚨 CHECK GOOGLE CLOUD CONSOLE
+
+    // Removed the unreliable public proxy. Direct call requires correct API key restrictions.
+
+    
+
+    /**
+
+     * Retrieves location from cache or asks for a new one.
+
+     */
+
+    function getLocationCachedOrNew() {
+
+      const cache = JSON.parse(localStorage.getItem('cachedLocation') || '{}');
+
+      const now = Date.now();
+
+      // Cache is valid for 10 minutes
+
+      if (cache.timestamp && now - cache.timestamp < 10 * 60 * 1000) {
+
+        console.log("Using cached location.");
+
+        useLocation(cache.lat, cache.lng);
+
+      } else {
+
+        console.log("Getting new location...");
+
+        navigator.geolocation.getCurrentPosition(pos => {
+
+          const lat = pos.coords.latitude;
+
+          const lng = pos.coords.longitude;
+
+          localStorage.setItem('cachedLocation', JSON.stringify({ lat, lng, timestamp: now }));
+
+          useLocation(lat, lng);
+
+        }, (err) => {
+
+          console.error("Geolocation Error:", err);
+
+          alert("Location access denied or unavailable. Please enable location services.");
+
+        });
+
+      }
+
+    }
+
+
+
+    /**
+
+     * Fetches nearby cafes using the Google Places API.
+
+     */
+
+    async function useLocation(lat, lng) {
+
+      const endpoint = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=1500&type=cafe&key=${apiKey}`;
+
+      
+
+      try {
+
+        const response = await fetch(endpoint);
+
+
+
+        // 1. Check for network/HTTP errors (e.g., 403 Forbidden due to API key)
+
+        if (!response.ok) {
+
+          const errorText = await response.text();
+
+          console.error("HTTP Error:", response.status, response.statusText, errorText);
+
+          alert(`Request failed: HTTP Status ${response.status}. Check console for API key/restriction issues.`);
+
+          return;
+
+        }
+
+
+
+        const data = await response.json();
+
+
+
+        // 2. Check for Places API status errors (e.g., REQUEST_DENIED, ZERO_RESULTS)
+
+        if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+
+          console.error("Places API Status Error:", data.status, data.error_message || "");
+
+          alert(`Places API error: ${data.status}. This is often due to an invalid or improperly restricted API Key.`);
+
+          return;
+
+        }
+
+
+
+        if (data.results && data.results.length > 0) {
+
+          displayCards(data.results);
+
+        } else {
+
+          document.querySelector('.cards').innerHTML = '<p>No cafes found in the area. Try again later.</p>';
+
+        }
+
+      } catch (e) {
+
+        console.error("Network or Parsing Error:", e);
+
+        alert("A network or parsing error occurred. Check your internet connection.");
+
+      }
+
+    }
+
+
+
+    function displayCards(cafes) {
+
+      const container = document.querySelector('.cards');
+
+      container.innerHTML = '';
+
+      
+
+      // Simple card scaling logic (optional)
+
+      const cardDepth = (index) => {
+
+        const maxIndex = 3;
+
+        if (index >= maxIndex) return '';
+
+
+
+        const scale = 1 - (index / 25);
+
+        const translateY = 5 * index;
+
+        return `transform: scale(${scale}) translateY(${translateY}px);`;
+
+      }
+
+
+
+      cafes.forEach((cafe, i) => {
+
+        const wrapper = document.createElement('div');
+
+        wrapper.className = 'swipe-wrapper';
+
+        wrapper.style.zIndex = 200 - i;
+
+        wrapper.setAttribute('data-index', i); // for potential styling based on index
+
+
+
+        const card = document.createElement('div');
+
+        card.className = 'location-card';
+
+        card.style = cardDepth(i); // Apply simple depth styling
+
+
+
+        const imgUrl = cafe.photos?.[0]?.photo_reference
+
+          ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${cafe.photos[0].photo_reference}&key=${apiKey}`
+
+          : 'https://via.placeholder.com/250x150?text=No+Image';
+
+
+
+        const cafeData = {
+
+          name: cafe.name,
+
+          place_id: cafe.place_id,
+
+          photo: imgUrl,
+
+          rating: cafe.rating || 'N/A'
+
+        };
+
+
+
+        card.innerHTML = `
+
+          <img src="${imgUrl}" alt="${cafe.name}" />
+
+          <h3>${cafe.name}</h3>
+
+          <p>⭐️ Rating: ${cafe.rating || 'N/A'}</p>
+
+          <p><small>Swipe right to save 💖</small></p>
+
+        `;
+
+
+
+        wrapper.appendChild(card);
+
+        container.appendChild(wrapper);
+
+
+
+        const hammertime = new Hammer(wrapper);
+
+        // SWIPE LEFT (Reject)
+
+        hammertime.on('swipeleft', () => {
+
+          wrapper.style.transition = 'transform 0.3s, opacity 0.3s';
+
+          wrapper.style.transform = 'translateX(-150%) rotate(-15deg)';
+
+          wrapper.style.opacity = 0;
+
+          setTimeout(() => wrapper.remove(), 300);
+
+          updateCardStack();
+
+        });
+
+        
+
+        // SWIPE RIGHT (Save)
+
+        hammertime.on('swiperight', () => {
+
+          saveCafe(JSON.stringify(cafeData));
+
+          wrapper.style.transition = 'transform 0.3s, opacity 0.3s';
+
+          wrapper.style.transform = 'translateX(150%) rotate(15deg)';
+
+          wrapper.style.opacity = 0;
+
+          setTimeout(() => wrapper.remove(), 300);
+
+          updateCardStack();
+
+        });
+
+      });
+
+    }
+
+
+
+    // Function to re-style remaining cards after a swipe
+
+    function updateCardStack() {
+
+      const remainingCards = document.querySelectorAll('.swipe-wrapper .location-card');
+
+      remainingCards.forEach((card, index) => {
+
+        const scale = 1 - (index / 25);
+
+        const translateY = 5 * index;
+
+        card.style.transition = 'transform 0.3s ease';
+
+        card.style.transform = `scale(${scale}) translateY(${translateY}px)`;
+
+      });
+
+    }
+
+
+
+    function saveCafe(cafeJSON) {
+
+      const cafe = JSON.parse(cafeJSON);
+
+      let saved = JSON.parse(localStorage.getItem('savedCafes') || '[]');
+
+      if (!saved.find(c => c.place_id === cafe.place_id)) {
+
+        saved.push(cafe);
+
+        localStorage.setItem('savedCafes', JSON.stringify(saved));
+
+        // alert(`${cafe.name} saved!`); // Removing alert for smoother experience
+
+        console.log(`${cafe.name} saved!`);
+
+      } else {
+
+        // alert(`${cafe.name} is already saved.`); // Removing alert
+
+        console.log(`${cafe.name} is already saved.`);
+
+      }
+
+    }
+
+
+
+    function showSaved() {
+
+      const container = document.querySelector('.cards');
+
+      container.innerHTML = '';
+
+      const saved = JSON.parse(localStorage.getItem('savedCafes') || '[]');
+
+      
+
+      // Clear old card styling from saved view
+
+      container.style.display = 'flex';
+
+      container.style.flexDirection = 'column';
+
+      container.style.gap = '20px';
+
+
+
+      if (saved.length === 0) {
+
+        container.innerHTML = '<p>No saved cafes yet 😢</p>';
+
+        return;
+
+      }
+
+      saved.forEach(cafe => {
+
+        const card = document.createElement('div');
+
+        card.className = 'location-card saved-card';
+
+        // Remove swipe wrapper for saved view
+
+        card.innerHTML = `
+
+          <img src="${cafe.photo}" alt="${cafe.name}" />
+
+          <h3>${cafe.name}</h3>
+
+          <p>⭐️ Rating: ${cafe.rating}</p>
+
+          <button onclick="removeSavedCafe('${cafe.place_id}')">Remove</button>
+
+        `;
+
+        container.appendChild(card);
+
+      });
+
+    }
+
+    
+
+    function removeSavedCafe(placeId) {
+
+        let saved = JSON.parse(localStorage.getItem('savedCafes') || '[]');
+
+        saved = saved.filter(cafe => cafe.place_id !== placeId);
+
+        localStorage.setItem('savedCafes', JSON.stringify(saved));
+
+        showSaved(); // Refresh the list
+
+    }
+
+
+
+  </script>
+
+</body>
+
+</html>
