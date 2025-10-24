@@ -34,15 +34,16 @@
     </section>
 
     <section class="map-preview" id="mapPreviewWrap">
-      <div id="map" class="map"></div>
-      <div class="map-footer">
-        <div id="mapStatus" class="map-status">No location yet</div>
-        <div class="map-actions">
-          <button id="btn-open-google" class="btn btn-map">Open in Google Maps</button>
-          <button id="btn-clear-saved" class="btn btn-soft">Clear Saved</button>
-        </div>
-      </div>
-    </section>
+  <div id="map" class="map"></div>
+  <div class="map-footer">
+    <div id="mapStatus" class="map-status">Loading map...</div>
+    <div class="map-actions">
+      <button id="btn-open-google" class="btn btn-map">Open in Google Maps</button>
+      <button id="btn-clear-saved" class="btn btn-soft">Clear Saved</button>
+    </div>
+  </div>
+</section>
+
 
     <!-- Saved modal -->
     <div id="savedModal" class="modal hidden">
@@ -267,14 +268,24 @@
     }
 
     // Map integration (uses Google Maps JS loaded with Places library)
-  function initMap() {
-  console.log("Map initialized");
+ function initMap() {
+  const mapStatus = document.getElementById("mapStatus");
+  mapStatus.textContent = "Initializing map...";
+
+  // Default center (Catarman as fallback)
+  const center = { lat: 12.5029, lng: 124.6307 };
+
+  // Create map
   const map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: 12.5029, lng: 124.6307 },
-    zoom: 13,
+    center,
+    zoom: 14,
+    styles: [ /* optional pastel map styles */ ],
   });
-  window.map = map; // make map global
+
+  window.map = map;
+  mapStatus.textContent = "Map ready!";
 }
+
 
 
     function centerMapToPlace(place) {
@@ -534,4 +545,5 @@
   </script>
 </body>
 </html>
+
 
