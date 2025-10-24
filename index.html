@@ -1,559 +1,894 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Milktea Maven — Pastel Swipe</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%8B%3C/text%3E%3C/svg%3E">
-  <!-- Hammer.js for swipe gestures -->
-  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Milktea Maven — Pastel Swipe</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%8B%3C/text%3E%3C/svg%3E">
+  <!-- Hammer.js for swipe gestures -->
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <!-- Merged CSS for single-file mandate -->
+  <style>
+    /* 1. Variables and Base Styles */
+    :root {
+        --color-primary: #A3C9A8; /* Soft Green */
+        --color-secondary: #E2F0D9; /* Light Cream */
+        --color-accent: #DDC8BE; /* Soft Brown */
+        --color-danger: #E57373; /* Light Red */
+        --color-text: #333;
+    }
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--color-secondary);
+        color: var(--color-text);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+    .app {
+        width: 100%;
+        max-width: 450px;
+        padding: 0 16px;
+    }
+    
+    /* 2. Header and Controls */
+    .top {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    .logo {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #709475;
+        margin-bottom: 4px;
+        margin-top: 0;
+    }
+    .subtitle {
+        font-size: 0.9rem;
+        color: #555;
+        margin-top: 0;
+        margin-bottom: 12px;
+    }
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+    .btn {
+        padding: 8px 16px;
+        border-radius: 9999px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        white-space: nowrap;
+        font-size: 0.875rem;
+    }
+    .btn-primary {
+        background-color: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
+    }
+    .btn-primary:hover {
+        background-color: #8bb190;
+    }
+    .btn-soft {
+        background-color: var(--color-accent);
+        color: white;
+        border-color: var(--color-accent);
+    }
+    .btn-soft:hover {
+        background-color: #c7b3a7;
+    }
+    .btn-ghost {
+        background-color: transparent;
+        color: #709475;
+        border-color: #c0d8c3;
+    }
+    .btn-ghost:hover {
+        background-color: #eaf1eb;
+    }
+    .btn-danger {
+        background-color: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+    }
+
+    /* 3. Card Area (Swiping) */
+    .card-area {
+        position: relative;
+        height: 350px;
+        margin-bottom: 80px; /* Space for action buttons */
+    }
+    .cards-stack {
+        position: relative;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .card-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        cursor: grab;
+        transform-origin: 50% 100%;
+        transition: transform 300ms cubic-bezier(0.25, 0.8, 0.5, 1);
+        touch-action: none;
+    }
+    .card {
+        background-color: white;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #eee;
+    }
+    .card-media {
+        height: 60%;
+        overflow: hidden;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .card-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .card-body {
+        padding: 12px 16px;
+        height: 40%;
+    }
+    .card-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #444;
+        margin: 0 0 4px 0;
+    }
+    .card-sub {
+        font-size: 0.85rem;
+        color: #777;
+        margin-bottom: 8px;
+    }
+    .card-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    .empty-note {
+        text-align: center;
+        padding-top: 100px;
+        color: #888;
+    }
+
+    /* 4. Action Buttons */
+    .actions {
+        position: absolute;
+        bottom: -70px; /* Position below the cards */
+        width: 100%;
+        display: flex;
+        justify-content: space-around;
+        padding: 0 40px;
+    }
+    .round-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        font-size: 1.5rem;
+        font-weight: 800;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .reject {
+        background-color: var(--color-danger);
+        color: white;
+    }
+    .like {
+        background-color: var(--color-primary);
+        color: white;
+    }
+    .round-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 5. Map Preview */
+    .map-preview {
+        width: 100%;
+        margin-top: 30px;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        background-color: white;
+    }
+    .map {
+        height: 200px;
+        width: 100%;
+    }
+    .map-footer {
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #eee;
+    }
+    .map-status {
+        font-size: 0.85rem;
+        color: #555;
+        font-weight: 600;
+    }
+    .map-actions {
+        display: flex;
+        gap: 8px;
+    }
+    .btn-map {
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid #ccc;
+        background-color: #f8f8f8;
+        font-size: 0.8rem;
+        color: #444;
+    }
+    .btn-map:hover {
+        background-color: #e0e0e0;
+    }
+
+    /* 6. Modal and Saved List */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    .modal.hidden {
+        display: none;
+    }
+    .modal-card {
+        background-color: white;
+        border-radius: 1rem;
+        padding: 20px;
+        width: 90%;
+        max-width: 400px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: #709475;
+    }
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #888;
+    }
+    .saved-list {
+        overflow-y: auto;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .saved-row {
+        display: flex;
+        align-items: center;
+        background-color: var(--color-secondary);
+        padding: 8px;
+        border-radius: 8px;
+    }
+    .saved-row img {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 4px;
+        margin-right: 10px;
+    }
+    .saved-meta {
+        flex-grow: 1;
+    }
+    .saved-title {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .saved-sub {
+        font-size: 0.75rem;
+        color: #666;
+    }
+    .saved-actions {
+        display: flex;
+        gap: 4px;
+    }
+    .saved-actions .btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+    .modal-foot {
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    /* 7. Loader and Toast */
+    .loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+        z-index: 1001;
+    }
+    .loader.hidden { display: none; }
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(51, 51, 51, 0.9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 9999px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        z-index: 1002;
+        transition: opacity 0.3s;
+    }
+    .toast.hidden { opacity: 0; pointer-events: none; }
+  </style>
 </head>
 <body>
-  <main class="app">
-    <header class="top">
-      <div>
-        <h1 class="logo">Milktea Maven 🧋</h1>
-        <p class="subtitle">Swipe right to save your next boba fix — modern pastel vibes.</p>
-      </div>
-      <div class="controls">
-        <button id="btn-find" class="btn btn-primary">Find Boba Near Me</button>
-        <button id="btn-saved" class="btn btn-soft">Show Saved</button>
-        <button id="btn-test" class="btn btn-ghost">Test (Catarman)</button>
-      </div>
-    </header>
+  <main class="app">
+    <header class="top">
+      <div>
+        <h1 class="logo">Milktea Maven 🧋</h1>
+        <p class="subtitle">Swipe right to save your next boba fix — modern pastel vibes.</p>
+      </div>
+      <div class="controls">
+        <button id="btn-find" class="btn btn-primary">Find Boba Near Me</button>
+        <button id="btn-saved" class="btn btn-soft">Show Saved</button>
+        <button id="btn-test" class="btn btn-ghost">Test with Catarman (UEP)</button>
+      </div>
+    </header>
 
-    <section class="card-area">
-      <div id="cards" class="cards-stack">
-        <div class="empty-note">No results yet — click "Find Boba Near Me" to begin.</div>
-      </div>
-      <div class="actions">
-        <button id="btn-reject" class="round-btn reject">✕</button>
-        <button id="btn-like" class="round-btn like">❤</button>
-      </div>
-    </section>
+    <section class="card-area">
+      <div id="cards" class="cards-stack">
+        <div class="empty-note">No results yet — click "Find Boba Near Me" to begin.</div>
+      </div>
+      <div class="actions">
+        <button id="btn-reject" class="round-btn reject">✕</button>
+        <button id="btn-like" class="round-btn like">❤</button>
+      </div>
+    </section>
 
-    <section class="map-preview" id="mapPreviewWrap">
-  <div id="map" class="map"></div>
-  <div class="map-footer">
-    <div id="mapStatus" class="map-status">Loading map...</div>
-    <div class="map-actions">
-      <button id="btn-open-google" class="btn btn-map">Open in Google Maps</button>
-      <button id="btn-clear-saved" class="btn btn-soft">Clear Saved</button>
-    </div>
-  </div>
-</section>
-
-
-    <!-- Saved modal -->
-    <div id="savedModal" class="modal hidden">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Saved Milktea Shops</h3>
-          <button id="savedClose" class="modal-close">✕</button>
-        </div>
-        <div id="savedList" class="saved-list"></div>
-        <div class="modal-foot">
-          <button id="savedClear" class="btn btn-danger">Clear all saved</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Lightweight loader -->
-    <div id="loader" class="loader hidden">Searching…</div>
-
-    <!-- Toast -->
-    <div id="toast" class="toast hidden"></div>
-  </main>
-
-  <script>
-    /*************************************************
-     * Milktea Maven: Index (HTML + JS)
-     * - Keep CSS in style.css (separate file)
-     * - Replace YOUR_GOOGLE_API_KEY_HERE below in script tag loader
-     *************************************************/
-
-    // App config
-    const PHOTO_MAX_WIDTH = 600;      // Place photo width
-    const SEARCH_RADIUS = 5000;       // meters
-    const LOCAL_STORAGE_KEY = 'milktea_maven_saved_v1';
-
-    // State
-    let map, userMarker, savedMarkers = [];
-    let currentResults = []; // array of place objects (Places API)
-    let currentPlaceFocused = null;
-
-    // DOM
-    const cardsWrap = document.getElementById('cards');
-    const btnFind = document.getElementById('btn-find');
-    const btnSaved = document.getElementById('btn-saved');
-    const btnTest = document.getElementById('btn-test');
-    const btnLike = document.getElementById('btn-like');
-    const btnReject = document.getElementById('btn-reject');
-    const loader = document.getElementById('loader');
-    const toast = document.getElementById('toast');
-    const savedModal = document.getElementById('savedModal');
-    const savedList = document.getElementById('savedList');
-    const savedClose = document.getElementById('savedClose');
-    const savedClear = document.getElementById('savedClear');
-    const btnOpenGoogle = document.getElementById('btn-open-google');
-    const mapStatus = document.getElementById('mapStatus');
-    const btnClearSaved = document.getElementById('btn-clear-saved');
-
-    // Helpers: localStorage saved shops
-    function getSaved() {
-      try {
-        return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
-      } catch(e) { return []; }
-    }
-    function setSaved(list) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-    }
-    function addSaved(place) {
-      const saved = getSaved();
-      if (!saved.some(s => s.place_id === place.place_id)) {
-        saved.push(place);
-        setSaved(saved);
-        showToast(`Saved: ${place.name}`);
-        renderSavedList();
-        renderSavedMarkers();
-      } else showToast(`${place.name} is already saved`);
-    }
-    function removeSaved(place_id) {
-      const saved = getSaved().filter(s => s.place_id !== place_id);
-      setSaved(saved);
-      renderSavedList();
-      renderSavedMarkers();
-      showToast('Removed saved shop');
-    }
-    function clearSavedAll() {
-      setSaved([]);
-      renderSavedList();
-      renderSavedMarkers();
-      showToast('All saved shops cleared');
-    }
-
-    // UI helpers
-    function showLoader(yes=true) { loader.classList.toggle('hidden', !yes); }
-    function showToast(msg, ms=2000) {
-      toast.textContent = msg;
-      toast.classList.remove('hidden');
-      setTimeout(()=> toast.classList.add('hidden'), ms);
-    }
-
-    // Card creation & swipe
-    function createCard(place, index) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'card-wrapper';
-      wrapper.style.zIndex = 100 - index;
-
-      const card = document.createElement('article');
-      card.className = 'card';
-
-      // image url - use place.photos (client-side Places Library supplies getUrl)
-      let imgUrl = 'https://placehold.co/800x400/DDC8BE/ffffff?text=Milktea';
-      if (place.photos && place.photos.length) {
-        try {
-          imgUrl = place.photos[0].getUrl({maxWidth: PHOTO_MAX_WIDTH});
-        } catch(e) {
-          // fallback already set
-        }
-      }
-
-      card.innerHTML = `
-        <div class="card-media">
-          <img src="${imgUrl}" alt="${escapeHtml(place.name)}" loading="lazy" />
-        </div>
-        <div class="card-body">
-          <h3 class="card-title">${escapeHtml(place.name)}</h3>
-          <p class="card-sub">${escapeHtml(place.vicinity || place.formatted_address || '')}</p>
-          <div class="card-meta">
-            <span class="rating">⭐ ${place.rating || '–'}</span>
-            <span class="distance" id="d-${place.place_id}"></span>
-          </div>
-        </div>
-      `;
-      wrapper.appendChild(card);
-      setupHammer(wrapper, place);
-      return wrapper;
-    }
-
-    // Attach Hammer swipe listeners to wrapper
-    function setupHammer(wrapper, place) {
-      const hammertime = new Hammer(wrapper);
-      const card = wrapper.querySelector('.card');
-      let startX = 0;
-
-      hammertime.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 5 });
-
-      hammertime.on('pan', (ev) => {
-        card.style.transition = 'none';
-        const dx = ev.deltaX;
-        const rot = dx / 20;
-        card.style.transform = `translateX(${dx}px) rotate(${rot}deg)`;
-      });
-
-      hammertime.on('panend', (ev) => {
-        card.style.transition = 'transform 300ms ease';
-        const dx = ev.deltaX;
-        if (dx > 120) { // like
-          card.style.transform = `translateX(150%) rotate(15deg)`;
-          setTimeout(()=> {
-            wrapper.remove();
-            addSaved(serializePlaceForSaving(place));
-            rearrangeStack();
-          }, 300);
-        } else if (dx < -120) { // reject
-          card.style.transform = `translateX(-150%) rotate(-15deg)`;
-          setTimeout(()=> {
-            wrapper.remove();
-            rearrangeStack();
-          }, 300);
-        } else {
-          card.style.transform = '';
-        }
-      });
-
-      // click to focus (center map preview)
-      wrapper.addEventListener('click', (e) => {
-        e.stopPropagation();
-        currentPlaceFocused = place;
-        centerMapToPlace(place);
-      });
-    }
-
-    function rearrangeStack() {
-      // minor restyle of remaining stack to look nice
-      const wrappers = document.querySelectorAll('.card-wrapper');
-      wrappers.forEach((w,i) => {
-        w.style.zIndex = 100 - i;
-        const c = w.querySelector('.card');
-        c.style.transform = `scale(${1 - i*0.03}) translateY(${i*8}px)`;
-      });
-      if (!wrappers.length) {
-        cardsWrap.innerHTML = '<div class="empty-note">No more results. Try searching again.</div>';
-      }
-    }
-
-    // Small helper to serialize minimal place data for saved list & persistence
-    function serializePlaceForSaving(place) {
-      // place.photos[0].getUrl returns a URL usable from client.
-      const photo = (place.photos && place.photos.length) ? (place.photos[0].getUrl({maxWidth: 400}) || '') : '';
-      return {
-        place_id: place.place_id,
-        name: place.name,
-        vicinity: place.vicinity || place.formatted_address || '',
-        lat: place.geometry?.location?.lat(),
-        lng: place.geometry?.location?.lng(),
-        rating: place.rating || null,
-        photo
-      };
-    }
-
-    // Render results list as a stack of cards
-    function renderResults(places) {
-      currentResults = places;
-      cardsWrap.innerHTML = '';
-      if (!places || places.length === 0) {
-        cardsWrap.innerHTML = '<div class="empty-note">No results found.</div>';
-        return;
-      }
-      places.forEach((p,i) => {
-        const cardNode = createCard(p, i);
-        // apply depth transform for stack
-        const c = cardNode.querySelector('.card');
-        c.style.transform = `scale(${1 - i*0.03}) translateY(${i*8}px)`;
-        cardsWrap.appendChild(cardNode);
-      });
-    }
-
-    // Map integration (uses Google Maps JS loaded with Places library)
-//  function initMap() {
-//   const mapStatus = document.getElementById("mapStatus");
-//   mapStatus.textContent = "Initializing map...";
-
-//   // Default center (Catarman as fallback)
-//   const center = { lat: 12.5029, lng: 124.6307 };
-
-//   // Create map
-//   const map = new google.maps.Map(document.getElementById("map"), {
-//     center,
-//     zoom: 14,
-//     styles: [ /* optional pastel map styles */ ],
-//   });
-
-//   window.map = map;
-//   mapStatus.textContent = "Map ready!";
-// }
-
-    function initMap() {
-  console.log("Map initialized");
-  const map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: 12.5029, lng: 124.6307 },
-    zoom: 13,
-  });
-  window.map = map; // make map global
-}
+    <section class="map-preview" id="mapPreviewWrap">
+      <div id="map" class="map"></div>
+      <div class="map-footer">
+        <div id="mapStatus" class="map-status">Loading map...</div>
+        <div class="map-actions">
+          <button id="btn-open-google" class="btn btn-map">Open in Google Maps</button>
+          <button id="btn-clear-saved" class="btn btn-soft">Clear All Saved</button>
+        </div>
+      </div>
+    </section>
 
 
+    <!-- Saved modal -->
+    <div id="savedModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Saved Milktea Shops</h3>
+          <button id="savedClose" class="modal-close">✕</button>
+        </div>
+        <div id="savedList" class="saved-list"></div>
+        <div class="modal-foot">
+          <button id="savedClear" class="btn btn-danger">Clear all saved</button>
+        </div>
+      </div>
+    </div>
 
-    function centerMapToPlace(place) {
-      if (!map) return;
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-      map.panTo({lat, lng});
-      map.setZoom(17);
+    <!-- Lightweight loader -->
+    <div id="loader" class="loader hidden">Searching…</div>
 
-      if (userMarker) {
-        // optionally add a marker for focused place
-      }
-      // open Google Maps link on button
-      btnOpenGoogle.onclick = () => {
-        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
-        window.open(url, '_blank');
-      };
-      mapStatus.textContent = place.name;
-      currentPlaceFocused = place;
-    }
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+  </main>
 
-    // Render saved list inside modal
-    function renderSavedList() {
-      const saved = getSaved();
-      savedList.innerHTML = '';
-      if (!saved.length) {
-        savedList.innerHTML = '<div class="empty-note">No saved shops yet.</div>';
-        return;
-      }
-      saved.forEach(s => {
-        const el = document.createElement('div');
-        el.className = 'saved-row';
-        el.innerHTML = `
-          <img src="${s.photo || 'https://placehold.co/80x80/DDC8BE/ffffff?text=Milktea'}" alt="${escapeHtml(s.name)}" />
-          <div class="saved-meta">
-            <div class="saved-title">${escapeHtml(s.name)}</div>
-            <div class="saved-sub">${escapeHtml(s.vicinity || '')}</div>
-          </div>
-          <div class="saved-actions">
-            <button class="btn btn-soft" data-open="${s.place_id}">Map</button>
-            <button class="btn btn-danger" data-remove="${s.place_id}">Remove</button>
-          </div>
-        `;
-        savedList.appendChild(el);
+  <script>
+    /*************************************************
+     * Milktea Maven: Index (HTML + JS)
+     *************************************************/
 
-        el.querySelector('[data-remove]').addEventListener('click', () => {
-          removeSaved(s.place_id);
-        });
-        el.querySelector('[data-open]').addEventListener('click', () => {
-          // pan map to saved marker if available
-          if (s.lat && s.lng && map) {
-            map.panTo({lat: s.lat, lng: s.lng});
-            map.setZoom(16);
-            showToast(s.name);
-          } else {
-            showToast('Coordinates unavailable for this saved item');
-          }
-        });
-      });
-    }
+    // App config
+    const PHOTO_MAX_WIDTH = 600;      // Place photo width
+    const SEARCH_RADIUS = 5000;       // meters
+    const LOCAL_STORAGE_KEY = 'milktea_maven_saved_v1';
 
-    // Saved markers (on the map preview)
-    function renderSavedMarkers() {
-      // Clear existing savedMarkers
-      savedMarkers.forEach(m => m.setMap(null));
-      savedMarkers = [];
-      const saved = getSaved();
-      saved.forEach(s => {
-        if (s.lat && s.lng && map) {
-          const marker = new google.maps.Marker({
-            position: {lat: s.lat, lng: s.lng},
-            map,
-            title: s.name,
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 7,
-              fillColor: '#d6a77a',
-              fillOpacity: 1,
-              strokeColor: '#fff',
-              strokeWeight: 1
-            }
-          });
-          const inf = new google.maps.InfoWindow({content: `<strong>${escapeHtml(s.name)}</strong><div>${escapeHtml(s.vicinity)}</div>`});
-          marker.addListener('click', () => inf.open(map, marker));
-          savedMarkers.push(marker);
-        }
-      });
-    }
+    // State
+    let map, userMarker, savedMarkers = [];
+    let currentResults = []; // array of place objects (Places API)
+    let currentPlaceFocused = null;
 
-    // Utility: compute distance from user to place, show in card meta
-    function updateDistanceDisplays(userLat, userLng) {
-      currentResults.forEach(place => {
-        if (!place.geometry) return;
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const d = haversine(userLat, userLng, lat, lng);
-        const el = document.getElementById(`d-${place.place_id}`);
-        if (el) el.textContent = `${Math.round(d)} m`;
-      });
-    }
+    // DOM
+    const cardsWrap = document.getElementById('cards');
+    const btnFind = document.getElementById('btn-find');
+    const btnSaved = document.getElementById('btn-saved');
+    const btnTest = document.getElementById('btn-test');
+    const btnLike = document.getElementById('btn-like');
+    const btnReject = document.getElementById('btn-reject');
+    const loader = document.getElementById('loader');
+    const toast = document.getElementById('toast');
+    const savedModal = document.getElementById('savedModal');
+    const savedList = document.getElementById('savedList');
+    const savedClose = document.getElementById('savedClose');
+    const savedClear = document.getElementById('savedClear');
+    const btnOpenGoogle = document.getElementById('btn-open-google');
+    const mapStatus = document.getElementById('mapStatus');
+    const btnClearSaved = document.getElementById('btn-clear-saved');
 
-    // Haversine meters
-    function haversine(lat1, lon1, lat2, lon2){
-      const R = 6371000;
-      const toRad = v => v * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
+    // Helpers: localStorage saved shops
+    function getSaved() {
+      try {
+        return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
+      } catch(e) { return []; }
+    }
+    function setSaved(list) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+    }
+    function addSaved(place) {
+      const saved = getSaved();
+      if (!saved.some(s => s.place_id === place.place_id)) {
+        saved.push(place);
+        setSaved(saved);
+        showToast(`Saved: ${place.name}`);
+        renderSavedList();
+        renderSavedMarkers();
+      } else showToast(`${place.name} is already saved`);
+    }
+    function removeSaved(place_id) {
+      const saved = getSaved().filter(s => s.place_id !== place_id);
+      setSaved(saved);
+      renderSavedList();
+      renderSavedMarkers();
+      showToast('Removed saved shop');
+    }
+    function clearSavedAll() {
+      setSaved([]);
+      renderSavedList();
+      renderSavedMarkers();
+      showToast('All saved shops cleared');
+    }
 
-    // Escape HTML
-    function escapeHtml(s) {
-      if (!s) return '';
-      return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
-    }
+    // UI helpers
+    function showLoader(yes=true) { loader.classList.toggle('hidden', !yes); }
+    function showToast(msg, ms=2000) {
+      toast.textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(()=> toast.classList.add('hidden'), ms);
+    }
 
-    // Places search using Google Maps PlacesService (client side)
-    function findNearbyByCoords(lat, lng) {
-      if (!map) {
-        showToast('Map not loaded yet');
-        return;
-      }
-      showLoader(true);
-      const svc = new google.maps.places.PlacesService(map);
-      const request = {
-        location: new google.maps.LatLng(lat, lng),
-        radius: SEARCH_RADIUS,
-        type: ['restaurant'],
-        keyword: 'milk tea boba bubble tapioca'
-      };
-      svc.nearbySearch(request, (results, status, pagination) => {
-        showLoader(false);
-        if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length) {
-          // update currentResults and render cards
-          renderResults(results);
-          updateDistanceDisplays(lat, lng);
-          // show markers for saved in map
-          renderSavedMarkers();
-          // set user marker
-          if (userMarker) userMarker.setPosition({lat, lng});
-          else {
-            userMarker = new google.maps.Marker({
-              position: { lat, lng },
-              map,
-              title: 'You',
-              icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#709475', fillOpacity: 1, strokeColor: '#fff', strokeWeight:1 }
-            });
-          }
-          map.panTo({lat, lng});
-          map.setZoom(14);
-          mapStatus.textContent = `Results near you (${results.length})`;
-        } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-          renderResults([]);
-          showToast('No results found in this radius');
-          mapStatus.textContent = 'No results';
-        } else {
-          console.error('PlacesService error', status);
-          renderResults([]);
-          showToast('Places API error: ' + status);
-          mapStatus.textContent = 'Error';
-        }
-      });
-    }
+    // Card creation & swipe
+    function createCard(place, index) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'card-wrapper';
+      wrapper.style.zIndex = 100 - index;
 
-    // Geolocation flows
-    function findBobaNearMe() {
-      showLoader(true);
-      if (!navigator.geolocation) {
-        showLoader(false);
-        showToast('Geolocation not available');
-        return;
-      }
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        findNearbyByCoords(lat, lng);
-      }, (err) => {
-        showLoader(false);
-        console.error('Geolocation error', err);
-        showToast('Location denied or unavailable. Try the test mode.');
-      }, { enableHighAccuracy: true, timeout: 10000 });
-    }
+      const card = document.createElement('article');
+      card.className = 'card';
 
-    // Test Catarman coordinates (UEP)
-    function testCatarman() {
-      const lat = 12.5029, lng = 124.6307;
-      findNearbyByCoords(lat, lng);
-    }
+      // image url - use place.photos (client-side Places Library supplies getUrl)
+      let imgUrl = 'https://placehold.co/800x400/DDC8BE/ffffff?text=Milktea';
+      if (place.photos && place.photos.length) {
+        try {
+          imgUrl = place.photos[0].getUrl({maxWidth: PHOTO_MAX_WIDTH});
+        } catch(e) {
+          // fallback already set
+        }
+      }
 
-    // Buttons wiring
-    btnFind.addEventListener('click', () => { findBobaNearMe(); });
-    btnTest.addEventListener('click', () => { testCatarman(); });
-    btnSaved.addEventListener('click', () => {
-      renderSavedList();
-      savedModal.classList.remove('hidden');
-    });
-    savedClose.addEventListener('click', () => savedModal.classList.add('hidden'));
-    savedClear.addEventListener('click', () => {
-      if (confirm('Clear all saved shops?')) clearSavedAll();
-    });
+      card.innerHTML = `
+        <div class="card-media">
+          <img src="${imgUrl}" alt="${escapeHtml(place.name)}" loading="lazy" onerror="this.onerror=null; this.src='https://placehold.co/800x400/DDC8BE/ffffff?text=Milktea';"/>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">${escapeHtml(place.name)}</h3>
+          <p class="card-sub">${escapeHtml(place.vicinity || place.formatted_address || '')}</p>
+          <div class="card-meta">
+            <span class="rating">⭐ ${place.rating || '–'}</span>
+            <span class="distance" id="d-${place.place_id}"></span>
+          </div>
+        </div>
+      `;
+      wrapper.appendChild(card);
+      setupHammer(wrapper, place);
+      return wrapper;
+    }
 
-    btnLike.addEventListener('click', () => {
-      // simulate swipe right on top card
-      const top = document.querySelector('.card-wrapper');
-      if (!top) { showToast('No card to like'); return; }
-      top.querySelector('.card').style.transition = 'transform 300ms ease';
-      top.querySelector('.card').style.transform = 'translateX(150%) rotate(12deg)';
-      const place = currentResults[0];
-      setTimeout(()=> { top.remove(); addSaved(serializePlaceForSaving(place)); rearrangeStack(); }, 250);
-    });
+    // Attach Hammer swipe listeners to wrapper
+    function setupHammer(wrapper, place) {
+      const hammertime = new Hammer(wrapper);
+      const card = wrapper.querySelector('.card');
+      
+      // Pan/Drag listener for interactive movement
+      hammertime.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 5 });
 
-    btnReject.addEventListener('click', () => {
-      const top = document.querySelector('.card-wrapper');
-      if (!top) { showToast('No card to reject'); return; }
-      top.querySelector('.card').style.transition = 'transform 300ms ease';
-      top.querySelector('.card').style.transform = 'translateX(-150%) rotate(-12deg)';
-      setTimeout(()=> { top.remove(); rearrangeStack(); }, 250);
-    });
+      hammertime.on('pan', (ev) => {
+        card.style.transition = 'none';
+        const dx = ev.deltaX;
+        const rot = dx / 20;
+        card.style.transform = `translateX(${dx}px) rotate(${rot}deg)`;
+      });
 
-    btnClearSaved.addEventListener('click', () => {
-      if (confirm('Clear all saved shops?')) clearSavedAll();
-    });
+      hammertime.on('panend', (ev) => {
+        card.style.transition = 'transform 300ms ease';
+        const dx = ev.deltaX;
+        if (dx > 120) { // like (swipe right)
+          card.style.transform = `translateX(150%) rotate(15deg)`;
+          setTimeout(()=> {
+            wrapper.remove();
+            addSaved(serializePlaceForSaving(place));
+            rearrangeStack();
+          }, 300);
+        } else if (dx < -120) { // reject (swipe left)
+          card.style.transform = `translateX(-150%) rotate(-15deg)`;
+          setTimeout(()=> {
+            wrapper.remove();
+            rearrangeStack();
+          }, 300);
+        } else {
+          card.style.transform = '';
+        }
+      });
 
-    // init on load: render saved & init map if google maps script already loaded
-    window.appInit = function() {
-      renderSavedList();
-      renderSavedMarkers();
-      // if google maps already loaded and map function exists, initialize
-      if (typeof google !== 'undefined' && google.maps) {
-        try { initMap(); renderSavedMarkers(); } catch(e) { console.warn(e); }
-      }
-      showToast('Ready — use Find Boba Near Me');
-    };
+      // click to focus (center map preview)
+      wrapper.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentPlaceFocused = place;
+        centerMapToPlace(place);
+      });
+    }
 
-    // Expose functions for HTML onclick (test mode etc)
-    window.findBobaNearMe = findBobaNearMe;
-    window.testCatarman = testCatarman;
-    window.getSaved = getSaved;
+    function rearrangeStack() {
+      // minor restyle of remaining stack to look nice
+      const wrappers = document.querySelectorAll('.card-wrapper');
+      wrappers.forEach((w,i) => {
+        w.style.zIndex = 100 - i;
+        const c = w.querySelector('.card');
+        c.style.transform = `scale(${1 - i*0.03}) translateY(${i*8}px)`;
+      });
+      if (!wrappers.length) {
+        cardsWrap.innerHTML = '<div class="empty-note">No more results. Try searching again.</div>';
+      }
+    }
 
-    // Called by Google Maps JS callback (see script load at bottom)
-    function initMapAndApp() {
-      initMap();
-      appInit();
-    }
-    window.initMap = initMapAndApp;
-  </script>
+    // Small helper to serialize minimal place data for saved list & persistence
+    function serializePlaceForSaving(place) {
+      // place.photos[0].getUrl returns a URL usable from client.
+      const photo = (place.photos && place.photos.length) ? (place.photos[0].getUrl({maxWidth: 400}) || '') : '';
+      return {
+        place_id: place.place_id,
+        name: place.name,
+        vicinity: place.vicinity || place.formatted_address || '',
+        lat: place.geometry?.location?.lat(),
+        lng: place.geometry?.location?.lng(),
+        rating: place.rating || null,
+        photo
+      };
+    }
 
-  <!--
-    Load Google Maps JS with Places library.
-    IMPORTANT: Replace YOUR_GOOGLE_API_KEY_HERE with your own restricted key.
-    Keep &libraries=places for PlacesService client-side usage.
-  -->
-  <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDk8cpELLpGngE-1uLEGSuG5VnUwTqPq3w&libraries=places&callback=initMap">
-  </script>
+    // Render results list as a stack of cards
+    function renderResults(places) {
+      currentResults = places;
+      cardsWrap.innerHTML = '';
+      if (!places || places.length === 0) {
+        cardsWrap.innerHTML = '<div class="empty-note">No results found.</div>';
+        return;
+      }
+      places.forEach((p,i) => {
+        const cardNode = createCard(p, i);
+        // apply depth transform for stack
+        const c = cardNode.querySelector('.card');
+        c.style.transform = `scale(${1 - i*0.03}) translateY(${i*8}px)`;
+        cardsWrap.appendChild(cardNode);
+      });
+    }
+
+    // Map initialization
+    function initMap() {
+      console.log("Map initialized");
+      const map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 12.5029, lng: 124.6307 }, // Default: Catarman
+        zoom: 13,
+      });
+      window.map = map; // make map global
+      mapStatus.textContent = "Map focused on Catarman (Test Location)";
+      appInit();
+    }
+
+
+    function centerMapToPlace(place) {
+      if (!map) return;
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      map.panTo({lat, lng});
+      map.setZoom(17);
+
+      // open Google Maps link on button
+      btnOpenGoogle.onclick = () => {
+        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
+        window.open(url, '_blank');
+      };
+      mapStatus.textContent = `${place.name}`;
+      currentPlaceFocused = place;
+    }
+
+    // Render saved list inside modal
+    function renderSavedList() {
+      const saved = getSaved();
+      savedList.innerHTML = '';
+      if (!saved.length) {
+        savedList.innerHTML = '<div class="empty-note">No saved shops yet.</div>';
+        return;
+      }
+      saved.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'saved-row';
+        el.innerHTML = `
+          <img src="${s.photo || 'https://placehold.co/80x80/DDC8BE/ffffff?text=Milktea'}" alt="${escapeHtml(s.name)}" onerror="this.onerror=null; this.src='https://placehold.co/80x80/DDC8BE/ffffff?text=Milktea';" />
+          <div class="saved-meta">
+            <div class="saved-title">${escapeHtml(s.name)}</div>
+            <div class="saved-sub">${escapeHtml(s.vicinity || '')}</div>
+          </div>
+          <div class="saved-actions">
+            <button class="btn btn-soft" data-open="${s.place_id}">Map</button>
+            <button class="btn btn-danger" data-remove="${s.place_id}">✕</button>
+          </div>
+        `;
+        savedList.appendChild(el);
+
+        el.querySelector('[data-remove]').addEventListener('click', () => {
+          removeSaved(s.place_id);
+        });
+        el.querySelector('[data-open]').addEventListener('click', () => {
+          // pan map to saved marker if available
+          if (s.lat && s.lng && map) {
+            map.panTo({lat: s.lat, lng: s.lng});
+            map.setZoom(16);
+            savedModal.classList.add('hidden'); // Close modal after selection
+            showToast(`Viewing ${s.name} on map`);
+          } else {
+            showToast('Coordinates unavailable for this saved item');
+          }
+        });
+      });
+    }
+
+    // Saved markers (on the map preview)
+    function renderSavedMarkers() {
+      // Clear existing savedMarkers
+      savedMarkers.forEach(m => m.setMap(null));
+      savedMarkers = [];
+      const saved = getSaved();
+      saved.forEach(s => {
+        if (s.lat && s.lng && map) {
+          const marker = new google.maps.Marker({
+            position: {lat: s.lat, lng: s.lng},
+            map,
+            title: s.name,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: '#d6a77a', // Accent color for saved
+              fillOpacity: 1,
+              strokeColor: '#fff',
+              strokeWeight: 1
+            }
+          });
+          const inf = new google.maps.InfoWindow({content: `<strong>${escapeHtml(s.name)}</strong><div>${escapeHtml(s.vicinity)}</div>`});
+          marker.addListener('click', () => inf.open(map, marker));
+          savedMarkers.push(marker);
+        }
+      });
+    }
+
+    // Utility: compute distance from user to place, show in card meta
+    function updateDistanceDisplays(userLat, userLng) {
+      currentResults.forEach(place => {
+        if (!place.geometry) return;
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const d = haversine(userLat, userLng, lat, lng);
+        const el = document.getElementById(`d-${place.place_id}`);
+        if (el) el.textContent = `${Math.round(d)} m`;
+      });
+    }
+
+    // Haversine meters
+    function haversine(lat1, lon1, lat2, lon2){
+      const R = 6371000;
+      const toRad = v => v * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // Escape HTML
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
+    }
+
+    // Places search using Google Maps PlacesService (client side)
+    function findNearbyByCoords(lat, lng, isGeolocated = false) {
+      if (!map) {
+        showToast('Map not loaded yet');
+        return;
+      }
+      showLoader(true);
+      const svc = new google.maps.places.PlacesService(map);
+      const request = {
+        location: new google.maps.LatLng(lat, lng),
+        radius: SEARCH_RADIUS,
+        type: ['restaurant', 'cafe'], // broadening types slightly
+        keyword: 'milk tea boba bubble tapioca'
+      };
+      svc.nearbySearch(request, (results, status, pagination) => {
+        showLoader(false);
+        if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length) {
+          // update currentResults and render cards
+          renderResults(results);
+          updateDistanceDisplays(lat, lng);
+          // show markers for saved in map
+          renderSavedMarkers();
+          // set user marker
+          if (userMarker) userMarker.setPosition({lat, lng});
+          else {
+            userMarker = new google.maps.Marker({
+              position: { lat, lng },
+              map,
+              title: isGeolocated ? 'Your Location' : 'Test Location',
+              icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#709475', fillOpacity: 1, strokeColor: '#fff', strokeWeight:1 }
+            });
+          }
+          map.panTo({lat, lng});
+          map.setZoom(14);
+          mapStatus.textContent = isGeolocated ? `Results near you (${results.length})` : `Results near UEP/Catarman (${results.length})`;
+          
+          // Center map on first result if available
+          if (results.length > 0) {
+            centerMapToPlace(results[0]);
+          }
+        } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+          renderResults([]);
+          showToast('No results found in this radius');
+          mapStatus.textContent = 'No results';
+        } else {
+          console.error('PlacesService error', status);
+          renderResults([]);
+          showToast(`Places API error: ${status}. Check console for details.`);
+          mapStatus.textContent = 'Error';
+        }
+      });
+    }
+
+    // Geolocation flows
+    function findBobaNearMe() {
+      showLoader(true);
+      if (!navigator.geolocation) {
+        showLoader(false);
+        showToast('Geolocation not available');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        findNearbyByCoords(lat, lng, true);
+      }, (err) => {
+        showLoader(false);
+        console.error('Geolocation error', err);
+        showToast('Location denied or unavailable. Try the test mode.');
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    // Test Catarman coordinates (UEP)
+    function testCatarman() {
+      const lat = 12.5029, lng = 124.6307;
+      findNearbyByCoords(lat, lng, false);
+    }
+
+    // Buttons wiring
+    btnFind.addEventListener('click', () => { findBobaNearMe(); });
+    btnTest.addEventListener('click', () => { testCatarman(); });
+    btnSaved.addEventListener('click', () => {
+      renderSavedList();
+      savedModal.classList.remove('hidden');
+    });
+    savedClose.addEventListener('click', () => savedModal.classList.add('hidden'));
+    
+    // FIX: Replaced confirm() with direct action
+    savedClear.addEventListener('click', () => {
+      clearSavedAll();
+      savedModal.classList.add('hidden');
+    });
+    // FIX: Replaced confirm() with direct action
+    btnClearSaved.addEventListener('click', () => {
+      clearSavedAll();
+    });
+
+    btnLike.addEventListener('click', () => {
+      // simulate swipe right on top card
+      const top = document.querySelector('.card-wrapper');
+      if (!top) { showToast('No card to like'); return; }
+      top.querySelector('.card').style.transition = 'transform 300ms ease';
+      top.querySelector('.card').style.transform = 'translateX(150%) rotate(12deg)';
+      const place = currentResults[0];
+      setTimeout(()=> { top.remove(); addSaved(serializePlaceForSaving(place)); rearrangeStack(); }, 250);
+    });
+
+    btnReject.addEventListener('click', () => {
+      const top = document.querySelector('.card-wrapper');
+      if (!top) { showToast('No card to reject'); return; }
+      top.querySelector('.card').style.transition = 'transform 300ms ease';
+      top.querySelector('.card').style.transform = 'translateX(-150%) rotate(-12deg)';
+      setTimeout(()=> { top.remove(); rearrangeStack(); }, 250);
+    });
+
+    // init on load: render saved & init map if google maps script already loaded
+    window.appInit = function() {
+      renderSavedList();
+      renderSavedMarkers();
+      showToast('Ready — use Find Boba Near Me');
+    };
+
+    // Expose functions for Google Maps callback
+    window.initMap = initMap;
+  </script>
+
+  <!--
+    Load Google Maps JS with Places library.
+  -->
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDk8cpELLpGngE-1uLEGSuG5VnUwTqPq3w&libraries=places&callback=initMap">
+  </script>
 </body>
 </html>
-
-
-
