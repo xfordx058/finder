@@ -225,13 +225,14 @@
         }
         
         /**
-         * TEST MODE: Fetches Milktea shops using a known boba hotspot (Manila, PH).
+         * TEST MODE: Fetches Milktea shops using a known boba hotspot (Catarman, PH).
+         * Coordinates are for UEP - University of Eastern Philippines.
          */
-        function fetchManilaTest() {
-            // Coordinates for Intramuros/central Manila, Philippines
-            const manilaLat = 14.5995;
-            const manilaLng = 120.9842;
-            fetchMilkteaShops(manilaLat, manilaLng, "Manila, Philippines");
+        function fetchCatarmanTest() {
+            // Coordinates for UEP (Catarman, Northern Samar, Philippines)
+            const catarmanLat = 12.5029;
+            const catarmanLng = 124.6307;
+            fetchMilkteaShops(catarmanLat, catarmanLng, "Catarman, Northern Samar");
         }
 
 
@@ -469,7 +470,7 @@
 
         // Initialize the status message when the page loads
         window.onload = () => {
-             displayStatusMessage('Ready! Click "Find Boba Near Me" or "Test with Manila".');
+             displayStatusMessage('Ready! Click "Find Boba Near Me" or "Test with Catarman".');
         }
     </script>
 </head>
@@ -484,7 +485,8 @@
             <!-- Renamed function to getLocation() and removed disabled -->
             <button class="btn btn-primary" id="findBobaBtn" onclick="getLocation()">Find Boba Near Me</button>
             <button class="btn btn-primary" id="showSavedBtn" onclick="showSaved()">Show My Saved Boba</button>
-            <button class="btn btn-secondary" id="testManilaBtn" onclick="fetchManilaTest()">Test with Manila (PH Hotspot)</button>
+            <!-- UPDATED TEST BUTTON for Catarman, Northern Samar (UEP) -->
+            <button class="btn btn-secondary" id="testCatarmanBtn" onclick="fetchCatarmanTest()">Test with Catarman (NS Hotspot)</button>
         </div>
 
         <!-- Card Swiping Area -->
