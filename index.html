@@ -1,90 +1,534 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MilkTea Finder (Google Maps)</title>
-    <style>
-      html, body { height: 100%; margin: 0; font-family: Arial, sans-serif; }
-      #map { height: 100%; width: 100%; }
-      #panel {
-        position: absolute;
-        top: 10px; left: 10px;
-        background: white; padding: 10px;
-        border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      }
-      .btn { background: #d6336c; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-    </style>
-  </head>
-  <body>
-    <div id="panel">
-      <button class="btn" onclick="findMilkTea()">📍 Find Milk Tea Near Me</button>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Milktea Maven — Pastel Swipe</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%8B%3C/text%3E%3C/svg%3E">
+  <!-- Hammer.js for swipe gestures -->
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div>
+        <h1 class="logo">Milktea Maven 🧋</h1>
+        <p class="subtitle">Swipe right to save your next boba fix — modern pastel vibes.</p>
+      </div>
+      <div class="controls">
+        <button id="btn-find" class="btn btn-primary">Find Boba Near Me</button>
+        <button id="btn-saved" class="btn btn-soft">Show Saved</button>
+        <button id="btn-test" class="btn btn-ghost">Test (Catarman)</button>
+      </div>
+    </header>
+
+    <section class="card-area">
+      <div id="cards" class="cards-stack">
+        <div class="empty-note">No results yet — click "Find Boba Near Me" to begin.</div>
+      </div>
+      <div class="actions">
+        <button id="btn-reject" class="round-btn reject">✕</button>
+        <button id="btn-like" class="round-btn like">❤</button>
+      </div>
+    </section>
+
+    <section class="map-preview" id="mapPreviewWrap">
+      <div id="map" class="map"></div>
+      <div class="map-footer">
+        <div id="mapStatus" class="map-status">No location yet</div>
+        <div class="map-actions">
+          <button id="btn-open-google" class="btn btn-map">Open in Google Maps</button>
+          <button id="btn-clear-saved" class="btn btn-soft">Clear Saved</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Saved modal -->
+    <div id="savedModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Saved Milktea Shops</h3>
+          <button id="savedClose" class="modal-close">✕</button>
+        </div>
+        <div id="savedList" class="saved-list"></div>
+        <div class="modal-foot">
+          <button id="savedClear" class="btn btn-danger">Clear all saved</button>
+        </div>
+      </div>
     </div>
-    <div id="map"></div>
 
-    <script>
-      let map, service, infoWindow;
+    <!-- Lightweight loader -->
+    <div id="loader" class="loader hidden">Searching…</div>
 
-      function initMap() {
-        map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: 14.5995, lng: 120.9842 }, // Manila default
-          zoom: 14,
-        });
-        infoWindow = new google.maps.InfoWindow();
-      }
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+  </main>
 
-      function findMilkTea() {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition((position) => {
-            const userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            map.setCenter(userLocation);
+  <script>
+    /*************************************************
+     * Milktea Maven: Index (HTML + JS)
+     * - Keep CSS in style.css (separate file)
+     * - Replace YOUR_GOOGLE_API_KEY_HERE below in script tag loader
+     *************************************************/
 
-            new google.maps.Marker({
-              position: userLocation,
-              map: map,
-              title: "You are here",
-              icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-            });
+    // App config
+    const PHOTO_MAX_WIDTH = 600;      // Place photo width
+    const SEARCH_RADIUS = 5000;       // meters
+    const LOCAL_STORAGE_KEY = 'milktea_maven_saved_v1';
 
-            const request = {
-              location: userLocation,
-              radius: 2000, // 2km
-              keyword: "milk tea",
-            };
+    // State
+    let map, userMarker, savedMarkers = [];
+    let currentResults = []; // array of place objects (Places API)
+    let currentPlaceFocused = null;
 
-            service = new google.maps.places.PlacesService(map);
-            service.nearbySearch(request, (results, status) => {
-              if (status === google.maps.places.PlacesServiceStatus.OK) {
-                for (let place of results) {
-                  createMarker(place);
-                }
-              }
-            });
-          });
-        } else {
-          alert("Geolocation not supported.");
+    // DOM
+    const cardsWrap = document.getElementById('cards');
+    const btnFind = document.getElementById('btn-find');
+    const btnSaved = document.getElementById('btn-saved');
+    const btnTest = document.getElementById('btn-test');
+    const btnLike = document.getElementById('btn-like');
+    const btnReject = document.getElementById('btn-reject');
+    const loader = document.getElementById('loader');
+    const toast = document.getElementById('toast');
+    const savedModal = document.getElementById('savedModal');
+    const savedList = document.getElementById('savedList');
+    const savedClose = document.getElementById('savedClose');
+    const savedClear = document.getElementById('savedClear');
+    const btnOpenGoogle = document.getElementById('btn-open-google');
+    const mapStatus = document.getElementById('mapStatus');
+    const btnClearSaved = document.getElementById('btn-clear-saved');
+
+    // Helpers: localStorage saved shops
+    function getSaved() {
+      try {
+        return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
+      } catch(e) { return []; }
+    }
+    function setSaved(list) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+    }
+    function addSaved(place) {
+      const saved = getSaved();
+      if (!saved.some(s => s.place_id === place.place_id)) {
+        saved.push(place);
+        setSaved(saved);
+        showToast(`Saved: ${place.name}`);
+        renderSavedList();
+        renderSavedMarkers();
+      } else showToast(`${place.name} is already saved`);
+    }
+    function removeSaved(place_id) {
+      const saved = getSaved().filter(s => s.place_id !== place_id);
+      setSaved(saved);
+      renderSavedList();
+      renderSavedMarkers();
+      showToast('Removed saved shop');
+    }
+    function clearSavedAll() {
+      setSaved([]);
+      renderSavedList();
+      renderSavedMarkers();
+      showToast('All saved shops cleared');
+    }
+
+    // UI helpers
+    function showLoader(yes=true) { loader.classList.toggle('hidden', !yes); }
+    function showToast(msg, ms=2000) {
+      toast.textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(()=> toast.classList.add('hidden'), ms);
+    }
+
+    // Card creation & swipe
+    function createCard(place, index) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'card-wrapper';
+      wrapper.style.zIndex = 100 - index;
+
+      const card = document.createElement('article');
+      card.className = 'card';
+
+      // image url - use place.photos (client-side Places Library supplies getUrl)
+      let imgUrl = 'https://placehold.co/800x400/DDC8BE/ffffff?text=Milktea';
+      if (place.photos && place.photos.length) {
+        try {
+          imgUrl = place.photos[0].getUrl({maxWidth: PHOTO_MAX_WIDTH});
+        } catch(e) {
+          // fallback already set
         }
       }
 
-      function createMarker(place) {
-        if (!place.geometry || !place.geometry.location) return;
-        const marker = new google.maps.Marker({
-          map,
-          position: place.geometry.location,
-        });
-        google.maps.event.addListener(marker, "click", () => {
-          infoWindow.setContent(`<strong>${place.name}</strong><br>${place.vicinity || ''}`);
-          infoWindow.open(map, marker);
-        });
-      }
-    </script>
+      card.innerHTML = `
+        <div class="card-media">
+          <img src="${imgUrl}" alt="${escapeHtml(place.name)}" loading="lazy" />
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">${escapeHtml(place.name)}</h3>
+          <p class="card-sub">${escapeHtml(place.vicinity || place.formatted_address || '')}</p>
+          <div class="card-meta">
+            <span class="rating">⭐ ${place.rating || '–'}</span>
+            <span class="distance" id="d-${place.place_id}"></span>
+          </div>
+        </div>
+      `;
+      wrapper.appendChild(card);
+      setupHammer(wrapper, place);
+      return wrapper;
+    }
 
-    <!-- Replace YOUR_API_KEY_HERE with your actual key -->
-    <script async
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDk8cpELLpGngE-1uLEGSuG5VnUwTqPq3w&libraries=places&callback=initMap">
-    </script>
-  </body>
+    // Attach Hammer swipe listeners to wrapper
+    function setupHammer(wrapper, place) {
+      const hammertime = new Hammer(wrapper);
+      const card = wrapper.querySelector('.card');
+      let startX = 0;
+
+      hammertime.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 5 });
+
+      hammertime.on('pan', (ev) => {
+        card.style.transition = 'none';
+        const dx = ev.deltaX;
+        const rot = dx / 20;
+        card.style.transform = `translateX(${dx}px) rotate(${rot}deg)`;
+      });
+
+      hammertime.on('panend', (ev) => {
+        card.style.transition = 'transform 300ms ease';
+        const dx = ev.deltaX;
+        if (dx > 120) { // like
+          card.style.transform = `translateX(150%) rotate(15deg)`;
+          setTimeout(()=> {
+            wrapper.remove();
+            addSaved(serializePlaceForSaving(place));
+            rearrangeStack();
+          }, 300);
+        } else if (dx < -120) { // reject
+          card.style.transform = `translateX(-150%) rotate(-15deg)`;
+          setTimeout(()=> {
+            wrapper.remove();
+            rearrangeStack();
+          }, 300);
+        } else {
+          card.style.transform = '';
+        }
+      });
+
+      // click to focus (center map preview)
+      wrapper.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentPlaceFocused = place;
+        centerMapToPlace(place);
+      });
+    }
+
+    function rearrangeStack() {
+      // minor restyle of remaining stack to look nice
+      const wrappers = document.querySelectorAll('.card-wrapper');
+      wrappers.forEach((w,i) => {
+        w.style.zIndex = 100 - i;
+        const c = w.querySelector('.card');
+        c.style.transform = `scale(${1 - i*0.03}) translateY(${i*8}px)`;
+      });
+      if (!wrappers.length) {
+        cardsWrap.innerHTML = '<div class="empty-note">No more results. Try searching again.</div>';
+      }
+    }
+
+    // Small helper to serialize minimal place data for saved list & persistence
+    function serializePlaceForSaving(place) {
+      // place.photos[0].getUrl returns a URL usable from client.
+      const photo = (place.photos && place.photos.length) ? (place.photos[0].getUrl({maxWidth: 400}) || '') : '';
+      return {
+        place_id: place.place_id,
+        name: place.name,
+        vicinity: place.vicinity || place.formatted_address || '',
+        lat: place.geometry?.location?.lat(),
+        lng: place.geometry?.location?.lng(),
+        rating: place.rating || null,
+        photo
+      };
+    }
+
+    // Render results list as a stack of cards
+    function renderResults(places) {
+      currentResults = places;
+      cardsWrap.innerHTML = '';
+      if (!places || places.length === 0) {
+        cardsWrap.innerHTML = '<div class="empty-note">No results found.</div>';
+        return;
+      }
+      places.forEach((p,i) => {
+        const cardNode = createCard(p, i);
+        // apply depth transform for stack
+        const c = cardNode.querySelector('.card');
+        c.style.transform = `scale(${1 - i*0.03}) translateY(${i*8}px)`;
+        cardsWrap.appendChild(cardNode);
+      });
+    }
+
+    // Map integration (uses Google Maps JS loaded with Places library)
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 14.5995, lng: 120.9842 }, // Manila fallback
+        zoom: 14,
+        disableDefaultUI: true,
+      });
+    }
+
+    function centerMapToPlace(place) {
+      if (!map) return;
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      map.panTo({lat, lng});
+      map.setZoom(17);
+
+      if (userMarker) {
+        // optionally add a marker for focused place
+      }
+      // open Google Maps link on button
+      btnOpenGoogle.onclick = () => {
+        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
+        window.open(url, '_blank');
+      };
+      mapStatus.textContent = place.name;
+      currentPlaceFocused = place;
+    }
+
+    // Render saved list inside modal
+    function renderSavedList() {
+      const saved = getSaved();
+      savedList.innerHTML = '';
+      if (!saved.length) {
+        savedList.innerHTML = '<div class="empty-note">No saved shops yet.</div>';
+        return;
+      }
+      saved.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'saved-row';
+        el.innerHTML = `
+          <img src="${s.photo || 'https://placehold.co/80x80/DDC8BE/ffffff?text=Milktea'}" alt="${escapeHtml(s.name)}" />
+          <div class="saved-meta">
+            <div class="saved-title">${escapeHtml(s.name)}</div>
+            <div class="saved-sub">${escapeHtml(s.vicinity || '')}</div>
+          </div>
+          <div class="saved-actions">
+            <button class="btn btn-soft" data-open="${s.place_id}">Map</button>
+            <button class="btn btn-danger" data-remove="${s.place_id}">Remove</button>
+          </div>
+        `;
+        savedList.appendChild(el);
+
+        el.querySelector('[data-remove]').addEventListener('click', () => {
+          removeSaved(s.place_id);
+        });
+        el.querySelector('[data-open]').addEventListener('click', () => {
+          // pan map to saved marker if available
+          if (s.lat && s.lng && map) {
+            map.panTo({lat: s.lat, lng: s.lng});
+            map.setZoom(16);
+            showToast(s.name);
+          } else {
+            showToast('Coordinates unavailable for this saved item');
+          }
+        });
+      });
+    }
+
+    // Saved markers (on the map preview)
+    function renderSavedMarkers() {
+      // Clear existing savedMarkers
+      savedMarkers.forEach(m => m.setMap(null));
+      savedMarkers = [];
+      const saved = getSaved();
+      saved.forEach(s => {
+        if (s.lat && s.lng && map) {
+          const marker = new google.maps.Marker({
+            position: {lat: s.lat, lng: s.lng},
+            map,
+            title: s.name,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: '#d6a77a',
+              fillOpacity: 1,
+              strokeColor: '#fff',
+              strokeWeight: 1
+            }
+          });
+          const inf = new google.maps.InfoWindow({content: `<strong>${escapeHtml(s.name)}</strong><div>${escapeHtml(s.vicinity)}</div>`});
+          marker.addListener('click', () => inf.open(map, marker));
+          savedMarkers.push(marker);
+        }
+      });
+    }
+
+    // Utility: compute distance from user to place, show in card meta
+    function updateDistanceDisplays(userLat, userLng) {
+      currentResults.forEach(place => {
+        if (!place.geometry) return;
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const d = haversine(userLat, userLng, lat, lng);
+        const el = document.getElementById(`d-${place.place_id}`);
+        if (el) el.textContent = `${Math.round(d)} m`;
+      });
+    }
+
+    // Haversine meters
+    function haversine(lat1, lon1, lat2, lon2){
+      const R = 6371000;
+      const toRad = v => v * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // Escape HTML
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
+    }
+
+    // Places search using Google Maps PlacesService (client side)
+    function findNearbyByCoords(lat, lng) {
+      if (!map) {
+        showToast('Map not loaded yet');
+        return;
+      }
+      showLoader(true);
+      const svc = new google.maps.places.PlacesService(map);
+      const request = {
+        location: new google.maps.LatLng(lat, lng),
+        radius: SEARCH_RADIUS,
+        type: ['restaurant'],
+        keyword: 'milk tea boba bubble tapioca'
+      };
+      svc.nearbySearch(request, (results, status, pagination) => {
+        showLoader(false);
+        if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length) {
+          // update currentResults and render cards
+          renderResults(results);
+          updateDistanceDisplays(lat, lng);
+          // show markers for saved in map
+          renderSavedMarkers();
+          // set user marker
+          if (userMarker) userMarker.setPosition({lat, lng});
+          else {
+            userMarker = new google.maps.Marker({
+              position: { lat, lng },
+              map,
+              title: 'You',
+              icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#709475', fillOpacity: 1, strokeColor: '#fff', strokeWeight:1 }
+            });
+          }
+          map.panTo({lat, lng});
+          map.setZoom(14);
+          mapStatus.textContent = `Results near you (${results.length})`;
+        } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+          renderResults([]);
+          showToast('No results found in this radius');
+          mapStatus.textContent = 'No results';
+        } else {
+          console.error('PlacesService error', status);
+          renderResults([]);
+          showToast('Places API error: ' + status);
+          mapStatus.textContent = 'Error';
+        }
+      });
+    }
+
+    // Geolocation flows
+    function findBobaNearMe() {
+      showLoader(true);
+      if (!navigator.geolocation) {
+        showLoader(false);
+        showToast('Geolocation not available');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        findNearbyByCoords(lat, lng);
+      }, (err) => {
+        showLoader(false);
+        console.error('Geolocation error', err);
+        showToast('Location denied or unavailable. Try the test mode.');
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    // Test Catarman coordinates (UEP)
+    function testCatarman() {
+      const lat = 12.5029, lng = 124.6307;
+      findNearbyByCoords(lat, lng);
+    }
+
+    // Buttons wiring
+    btnFind.addEventListener('click', () => { findBobaNearMe(); });
+    btnTest.addEventListener('click', () => { testCatarman(); });
+    btnSaved.addEventListener('click', () => {
+      renderSavedList();
+      savedModal.classList.remove('hidden');
+    });
+    savedClose.addEventListener('click', () => savedModal.classList.add('hidden'));
+    savedClear.addEventListener('click', () => {
+      if (confirm('Clear all saved shops?')) clearSavedAll();
+    });
+
+    btnLike.addEventListener('click', () => {
+      // simulate swipe right on top card
+      const top = document.querySelector('.card-wrapper');
+      if (!top) { showToast('No card to like'); return; }
+      top.querySelector('.card').style.transition = 'transform 300ms ease';
+      top.querySelector('.card').style.transform = 'translateX(150%) rotate(12deg)';
+      const place = currentResults[0];
+      setTimeout(()=> { top.remove(); addSaved(serializePlaceForSaving(place)); rearrangeStack(); }, 250);
+    });
+
+    btnReject.addEventListener('click', () => {
+      const top = document.querySelector('.card-wrapper');
+      if (!top) { showToast('No card to reject'); return; }
+      top.querySelector('.card').style.transition = 'transform 300ms ease';
+      top.querySelector('.card').style.transform = 'translateX(-150%) rotate(-12deg)';
+      setTimeout(()=> { top.remove(); rearrangeStack(); }, 250);
+    });
+
+    btnClearSaved.addEventListener('click', () => {
+      if (confirm('Clear all saved shops?')) clearSavedAll();
+    });
+
+    // init on load: render saved & init map if google maps script already loaded
+    window.appInit = function() {
+      renderSavedList();
+      renderSavedMarkers();
+      // if google maps already loaded and map function exists, initialize
+      if (typeof google !== 'undefined' && google.maps) {
+        try { initMap(); renderSavedMarkers(); } catch(e) { console.warn(e); }
+      }
+      showToast('Ready — use Find Boba Near Me');
+    };
+
+    // Expose functions for HTML onclick (test mode etc)
+    window.findBobaNearMe = findBobaNearMe;
+    window.testCatarman = testCatarman;
+    window.getSaved = getSaved;
+
+    // Called by Google Maps JS callback (see script load at bottom)
+    function initMapAndApp() {
+      initMap();
+      appInit();
+    }
+    window.initMap = initMapAndApp;
+  </script>
+
+  <!--
+    Load Google Maps JS with Places library.
+    IMPORTANT: Replace YOUR_GOOGLE_API_KEY_HERE with your own restricted key.
+    Keep &libraries=places for PlacesService client-side usage.
+  -->
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDk8cpELLpGngE-1uLEGSuG5VnUwTqPq3w&libraries=places&callback=initMap">
+  </script>
+</body>
 </html>
