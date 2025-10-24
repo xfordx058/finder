@@ -267,13 +267,15 @@
     }
 
     // Map integration (uses Google Maps JS loaded with Places library)
-    function initMap() {
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 14.5995, lng: 120.9842 }, // Manila fallback
-        zoom: 14,
-        disableDefaultUI: true,
-      });
-    }
+  function initMap() {
+  console.log("Map initialized");
+  const map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: 12.5029, lng: 124.6307 },
+    zoom: 13,
+  });
+  window.map = map; // make map global
+}
+
 
     function centerMapToPlace(place) {
       if (!map) return;
@@ -532,3 +534,4 @@
   </script>
 </body>
 </html>
+
