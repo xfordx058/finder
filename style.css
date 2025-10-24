@@ -258,3 +258,15 @@ body{
   .actions{ flex-direction:row; }
   .map{ height:220px; }
 }
+.map {
+  width: 100%;
+  height: 400px; /* Ensure it’s visible */
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.map-status {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  color: #666;
+}
+
