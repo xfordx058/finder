@@ -1,4 +1,4 @@
- <style>
+
       /* --- CSS Variables and Global Reset --- */
       :root {
         --primary-color: #795548; /* Brown/boba color */
@@ -288,4 +288,5 @@
           background: #d32f2f;
           box-shadow: 0 2px 0 #d32f2f;
       }
-    </style>
+    
+
